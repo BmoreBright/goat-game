@@ -2366,9 +2366,9 @@ html, body {
     font-size: 15px;
   }
 
-  /* Prevent fixed UI from covering content */
+  /* Room for the tucked grip only — tray expands on demand */
   main {
-    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   /* ----- Setup screen ----- */
@@ -2682,5 +2682,101 @@ html, body {
   }
   .setup-hero {
     padding-top: 1rem !important;
+  }
+}
+
+
+/* ==========================================================================
+   Collapsible bottom tray (End Game only — scores live in top HUD)
+   ========================================================================== */
+.bottom-tray {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.bottom-tray.is-closed {
+  transform: translateY(calc(100% - 22px));
+}
+.bottom-tray.is-open {
+  transform: translateY(0);
+}
+
+.bottom-tray-grip {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 22px;
+  border: none;
+  border-radius: 12px 12px 0 0;
+  background: rgba(24, 24, 27, 0.95);
+  border: 1px solid rgba(63, 63, 70, 0.85);
+  border-bottom: none;
+  cursor: pointer;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.35);
+}
+.bottom-tray-grip-bar {
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: #52525b;
+}
+.bottom-tray-grip:active .bottom-tray-grip-bar {
+  background: #eab308;
+}
+
+.bottom-tray-panel {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 0.65rem 1rem 0.85rem;
+  background: rgba(24, 24, 27, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(63, 63, 70, 0.8);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  justify-content: center;
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.4);
+}
+
+.bottom-tray-end {
+  min-height: 44px;
+  padding: 0.6rem 1.4rem;
+  border-radius: 12px;
+  border: 1px solid rgba(113, 113, 122, 0.7);
+  background: #27272a;
+  color: #a1a1aa;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bottom-tray-end:hover {
+  background: #3f3f46;
+  color: #e4e4e7;
+}
+.bottom-tray-end:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 640px) {
+  .bottom-tray.is-closed {
+    transform: translateY(calc(100% - 20px));
+  }
+  .bottom-tray-panel {
+    max-width: 100%;
+    border-radius: 14px 14px 0 0;
   }
 }

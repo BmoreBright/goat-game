@@ -186,6 +186,7 @@ function App() {
   const [joinCode, setJoinCode] = useState('');
   const [lobbyName, setLobbyName] = useState('');
   const [voiceOn, setVoiceOn] = useState(false);
+  const [bottomBarOpen, setBottomBarOpen] = useState(false);
   const netRef = useRef(null);
   const isOnline = playMode === 'online';
   const mySeat = netStatus.seat;
@@ -3048,27 +3049,28 @@ function App() {
       </main>
 
       {gamePhase !== 'setup' && gamePhase !== 'gameOver' && gamePhase !== 'freeAgency' && gamePhase !== 'tableIntro' && (
-        <div className="fixed bottom-0 inset-x-0 z-30 pointer-events-none">
-          <div className="max-w-5xl mx-auto px-4 pb-4">
-            <div className="pointer-events-auto bg-zinc-900/95 backdrop-blur border border-zinc-700/80 rounded-2xl px-4 py-3 shadow-2xl flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
-              {scores.map((s, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className={i === currentCoach ? 'text-yellow-400 font-semibold' : 'text-zinc-400'}>{getName(i)}</span>
-                  <span className="font-bold text-yellow-400 tabular-nums">{s}</span>
-                </div>
-              ))}
-              <button
-                onClick={() => {
-                  if (window.confirm('End the game now and show final standings?')) {
-                    sounds.click();
-                    setGamePhase('gameOver');
-                  }
-                }}
-                className="ml-2 px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg border border-zinc-700 btn-press"
-              >
-                End Game
-              </button>
-            </div>
+        <div className={`bottom-tray ${bottomBarOpen ? 'is-open' : 'is-closed'}`}>
+          <button
+            type="button"
+            className="bottom-tray-grip"
+            aria-label={bottomBarOpen ? 'Hide menu' : 'Show menu'}
+            onClick={() => { sounds.click(); setBottomBarOpen(v => !v); }}
+          >
+            <span className="bottom-tray-grip-bar" />
+          </button>
+          <div className="bottom-tray-panel">
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('End the game now and show final standings?')) {
+                  sounds.click();
+                  setGamePhase('gameOver');
+                }
+              }}
+              className="bottom-tray-end"
+            >
+              End Game
+            </button>
           </div>
         </div>
       )}
