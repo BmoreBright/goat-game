@@ -784,14 +784,33 @@ function App() {
   // ========== START ==========
   const startGame = () => {
     if (!cardsLoaded) return;
+
+    // ----- Resolve actual players for this match -----
+    let count = playerCount;
+    let names = playerNames.slice(0, playerCount).map((n, i) => n.trim() || `Player ${i + 1}`);
+
+    if (isOnline) {
+      if (!isHost) return; // only host may start
+      const connected = (netStatus.players || [])
+        .filter(p => p.connected)
+        .sort((a, b) => a.seat - b.seat);
+      if (connected.length < 2) {
+        alert('Need at least 2 players in the room to start.');
+        return;
+      }
+      count = connected.length;
+      names = connected.map((p, i) => (p.name || `Player ${i + 1}`).slice(0, 18));
+      setPlayerCount(count);
+      setPlayerNames(names);
+    }
+
     sounds.click();
-    const names = playerNames.slice(0, playerCount).map((n, i) => n.trim() || `Player ${i + 1}`);
     setPlayerNames(names);
-    setUsedShorthanded(Array(playerCount).fill(false));
-    setShorthandedThisRound(Array(playerCount).fill(false));
+    setUsedShorthanded(Array(count).fill(false));
+    setShorthandedThisRound(Array(count).fill(false));
     setShorthandedDeclared([]);
     setShorthandedQueue([]);
-    setTradeUsedThisRound(Array(playerCount).fill(false));
+    setTradeUsedThisRound(Array(count).fill(false));
     setRoundNumber(1);
     setPendingNewCards({});
     setIsReady(false);
@@ -837,7 +856,7 @@ function App() {
     const emptyDiscards = { player: [], team: [], moment: [] };
     const dealCount = options.freeAgency ? 10 : 7;
 
-    const newHands = Array.from({ length: playerCount }, () => {
+    const newHands = Array.from({ length: count }, () => {
       const hand = { player: [], team: [], moment: [] };
       ['player', 'team', 'moment'].forEach(cat => {
         const result = drawFromDeck(freshDecks, emptyDiscards, cat, dealCount);
@@ -848,7 +867,7 @@ function App() {
     });
     setHands(newHands);
     setDecks(freshDecks);
-    setScores(Array(playerCount).fill(0));
+    setScores(Array(count).fill(0));
     setCurrentCoach(0);
     setCurrentPlayer(0);
 
@@ -1908,7 +1927,8 @@ function App() {
               </div>
 
               <div className="setup-panel">
-                {/* Players */}
+                {/* Players — only for local mode */}
+                {playMode === 'local' && (
                 <div className="setup-section">
                   <div className="setup-section-label">Players</div>
                   <div className="setup-segment">
@@ -1924,6 +1944,7 @@ function App() {
                     ))}
                   </div>
                 </div>
+                )}
 
                 {/* Target score */}
                 <div className="setup-section">
@@ -1942,7 +1963,8 @@ function App() {
                   </div>
                 </div>
 
-                {/* Names */}
+                {/* Names — only for local mode */}
+                {playMode === 'local' && (
                 <div className="setup-section">
                   <div className="setup-section-label">Names</div>
                   <div className="setup-names">
@@ -1964,6 +1986,7 @@ function App() {
                     ))}
                   </div>
                 </div>
+                )}
 
                 {/* How to play (compact) */}
                 <button
@@ -1981,9 +2004,24 @@ function App() {
                   </div>
                 )}
 
-                <button type="button" onClick={startGame} className="setup-cta">
-                  START THE DEBATE
-                </button>
+                {/* Start button */}
+                {playMode === 'local' && (
+                  <button type="button" onClick={startGame} className="setup-cta">
+                    START THE DEBATE
+                  </button>
+                )}
+                {playMode === 'online' && netStatus.roomCode && netStatus.isHost && (
+                  <button
+                    type="button"
+                    onClick={startGame}
+                    className="setup-cta"
+                    disabled={(netStatus.players || []).filter(p => p.connected).length < 2}
+                  >
+                    {(netStatus.players || []).filter(p => p.connected).length < 2
+                      ? 'Waiting for players…'
+                      : `START THE DEBATE (${(netStatus.players || []).filter(p => p.connected).length} players)`}
+                  </button>
+                )}
 
                 {/* Multiplayer */}
                 <div className="setup-section">
@@ -2063,7 +2101,13 @@ function App() {
                             </li>
                           ))}
                         </ul>
-                        {!netStatus.isHost && (
+                        {netStatus.isHost ? (
+                          <p className="net-hint">
+                            {(netStatus.players || []).filter(p => p.connected).length < 2
+                              ? 'Share the room code — need at least 2 players'
+                              : 'Everyone is here. Press START when ready.'}
+                          </p>
+                        ) : (
                           <p className="net-hint">Waiting for host to start the debate…</p>
                         )}
                       </div>
