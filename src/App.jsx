@@ -441,7 +441,21 @@ function App() {
     if (remote.revealPhase != null) setRevealPhase(remote.revealPhase);
     if (remote.revealStep != null) setRevealStep(remote.revealStep);
     if (remote.isRevealing != null) setIsRevealing(remote.isRevealing);
-    if (remote.hands) setHands(remote.hands);
+    // Privacy: only keep my own hand from the snapshot
+    if (remote.hands) {
+      const my = netRef.current?.state?.seat;
+      if (my != null && remote.hands[my]) {
+        setHands(prev => {
+          const base = (Array.isArray(prev) && prev.length === remote.hands.length)
+            ? [...prev]
+            : remote.hands.map(() => ({ player: [], team: [], moment: [] }));
+          base[my] = remote.hands[my];
+          return base;
+        });
+      } else {
+        setHands(remote.hands);
+      }
+    }
     if (remote.decks) setDecks(remote.decks);
     if (remote.discards) setDiscards(remote.discards);
     if (remote.usedShorthanded) setUsedShorthanded(remote.usedShorthanded);
@@ -450,8 +464,9 @@ function App() {
     if (remote.benched) setBenched(remote.benched);
     if (remote.tradeUsedThisRound) setTradeUsedThisRound(remote.tradeUsedThisRound);
     if (remote.freeAgencyStep) setFreeAgencyStep(remote.freeAgencyStep);
-    if (remote.tempHands) setTempHands(remote.tempHands);
+    // tempHands is local-only (selection must not be mirrored)
     if (remote.overtimePlayers) setOvertimePlayers(remote.overtimePlayers);
+
     if (remote.overtimePrompt !== undefined) setOvertimePrompt(remote.overtimePrompt);
     if (remote.overtimeAnswers) setOvertimeAnswers(remote.overtimeAnswers);
     if (remote.overtimeAnswerOrder) setOvertimeAnswerOrder(remote.overtimeAnswerOrder);

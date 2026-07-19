@@ -163,7 +163,10 @@ export function createNet(handlers = {}) {
   };
 }
 
-/** Fields the host should broadcast (keep payloads lean). */
+/** Fields the host should broadcast (keep payloads lean).
+ *  Private data (full hands / tempHands selections) is intentionally
+ *  limited — clients must only apply their own seat.
+ */
 export function snapshotForNet(app) {
   return {
     gamePhase: app.gamePhase,
@@ -185,7 +188,8 @@ export function snapshotForNet(app) {
     revealPhase: app.revealPhase,
     revealStep: app.revealStep,
     isRevealing: app.isRevealing,
-    hands: app.hands, // private — clients should only show own seat
+    // Still sent for now so dealing works; clients filter to own seat only
+    hands: app.hands,
     decks: app.decks,
     discards: app.discards,
     usedShorthanded: app.usedShorthanded,
@@ -194,7 +198,8 @@ export function snapshotForNet(app) {
     benched: app.benched,
     tradeUsedThisRound: app.tradeUsedThisRound,
     freeAgencyStep: app.freeAgencyStep,
-    tempHands: app.tempHands,
+    // Do NOT broadcast tempHands — selection state must stay local
+    // tempHands: app.tempHands,
     overtimePlayers: app.overtimePlayers,
     overtimePrompt: app.overtimePrompt,
     overtimeAnswers: app.overtimeAnswers,
@@ -209,3 +214,4 @@ export function snapshotForNet(app) {
     phaseReady: app.phaseReady,
   };
 }
+
