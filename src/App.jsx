@@ -1186,31 +1186,58 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gamePhase]);
 
-  // When all cards are in, auto-play center gather → shuffle → spread → flip → vote prompt
+  // Choreographed reveal: gather → shuffle → spread (face-down) → flip one-by-one → vote
   useEffect(() => {
     if (gamePhase !== 'reveal') return undefined;
-    if (revealPhase || isRevealing) return undefined;
-    setRevealAnim('gather');
+    if (revealPhase) {
+      setRevealAnim('ready');
+      return undefined;
+    }
+    let cancelled = false;
     const reduce = reduceMotion;
-    const tGather = setTimeout(() => setRevealAnim('shuffle'), reduce ? 200 : 700);
-    const tShuffle = setTimeout(() => setRevealAnim('spread'), reduce ? 400 : 1500);
-    const tSpread = setTimeout(() => {
+    setRevealAnim('gather');
+    setRevealPhase(false);
+    setIsRevealing(false);
+    setRevealStep(0);
+
+    const timers = [];
+    const later = (fn, ms) => {
+      const id = setTimeout(() => { if (!cancelled) fn(); }, ms);
+      timers.push(id);
+    };
+
+    later(() => setRevealAnim('shuffle'), reduce ? 250 : 800);
+    later(() => setRevealAnim('spread'), reduce ? 500 : 1700);
+    later(() => {
       setRevealAnim('flipping');
-      startStaggeredReveal();
-    }, reduce ? 600 : 2200);
+      setIsRevealing(true);
+      setRevealStep(0);
+      const n = Math.max(1, playedCards.length);
+      const stepMs = reduce ? 90 : 520;
+      let step = 0;
+      const tick = () => {
+        if (cancelled) return;
+        step += 1;
+        setRevealStep(step);
+        sounds.flip();
+        if (step < n) {
+          later(tick, stepMs);
+        } else {
+          setRevealPhase(true);
+          setIsRevealing(false);
+          setRevealAnim('ready');
+          sounds.ready();
+        }
+      };
+      later(tick, stepMs);
+    }, reduce ? 750 : 2600);
+
     return () => {
-      clearTimeout(tGather);
-      clearTimeout(tShuffle);
-      clearTimeout(tSpread);
+      cancelled = true;
+      timers.forEach(clearTimeout);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gamePhase]);
-
-  useEffect(() => {
-    if (gamePhase === 'reveal' && revealPhase) {
-      setRevealAnim('ready');
-    }
-  }, [gamePhase, revealPhase]);
+  }, [gamePhase, playedCards.length]);
 
   // ========== PLAY ==========
   const advanceAfterPlay = (newPlayed) => {
@@ -1634,9 +1661,9 @@ function App() {
             </button>
           ))}
         </div>
-        {played && (
-          <div className={`mini-seat-played ${justPlayedUid === played.card.uid ? 'commit-spin' : 'commit-rest'}`}>
-            <GameCard card={played.card} flipped={!showFace} size="table" disabled />
+        {played && gamePhase === 'playing' && (
+          <div className={`mini-seat-played toward-center ${justPlayedUid === played.card.uid ? 'commit-spin' : 'commit-rest'}`}>
+            <GameCard card={played.card} flipped size="table" disabled />
           </div>
         )}
       </div>
@@ -1650,7 +1677,8 @@ function App() {
     showCenterPlayed = false,
     centerFaceDown = true,
     centerShowVote = false,
-    centerShowResults = false
+    centerShowResults = false,
+    showPromptArrow = false,
   }) => {
     // Seat map: you at bottom; others around the square table
     const others = Array.from({ length: playerCount }, (_, i) => i).filter(i => i !== (isOnline ? mySeat : -1));
@@ -1715,6 +1743,20 @@ function App() {
 
             {/* Prompt decks — equal size */}
             <div className="felt-prompts">
+              {showPromptArrow && (
+                <div className="prompt-arrow-inline" aria-hidden>
+                  <svg viewBox="0 0 80 36" className="prompt-arrow-svg">
+                    <defs>
+                      <filter id="aglowf2" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="1.6" result="b" />
+                        <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                      </filter>
+                    </defs>
+                    <path d="M12 6 Q40 32 68 6" fill="none" stroke="#facc15" strokeWidth="3" strokeLinecap="round" filter="url(#aglowf2)" className="prompt-arrow-path" />
+                    <path d="M60 5 L70 6 L62 14" fill="none" stroke="#facc15" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#aglowf2)" />
+                  </svg>
+                </div>
+              )}
               <div className="felt-prompts-label">Prompt cards</div>
               <div className="felt-prompts-row">
                 {['moment', 'player', 'team'].map(cat => (
@@ -1748,9 +1790,12 @@ function App() {
                   const isOwn = centerShowVote && p.playerIndex === currentPlayer;
                   const voteCount = centerShowResults ? (tally[origIdx] || 0) : 0;
                   const isWinner = centerShowResults && origIdx === winnerIndex;
-                  const faceDown = centerFaceDown
-                    ? true
-                    : (isRevealing ? i >= revealStep : false);
+                  // Face-down until flipped in sequence; stay anonymous until results
+                  let faceDown = true;
+                  if (centerShowResults || revealAnim === 'ready') faceDown = false;
+                  else if (revealAnim === 'flipping') faceDown = i >= revealStep;
+                  else if (revealAnim === 'spread' || revealAnim === 'shuffle' || revealAnim === 'gather') faceDown = true;
+                  else faceDown = !!centerFaceDown;
                   const canVote = centerShowVote && !isOwn && !faceDown;
                   return (
                     <div
@@ -1769,9 +1814,9 @@ function App() {
                       <GameCard
                         card={p.card}
                         flipped={faceDown}
-                        size={(!faceDown && (centerShowVote || centerShowResults || revealPhase)) ? 'reveal' : 'table'}
-                        showOwner={centerShowResults || (!faceDown && !centerShowVote)}
-                        ownerName={getName(p.playerIndex)}
+                        size={(revealAnim === 'spread' || revealAnim === 'flipping' || revealAnim === 'ready' || centerShowResults) ? 'reveal' : 'table'}
+                        showOwner={!!centerShowResults}
+                        ownerName={centerShowResults ? getName(p.playerIndex) : undefined}
                         disabled={!canVote}
                         className={canVote ? 'vote-target' : ''}
                       />
@@ -2507,25 +2552,7 @@ function App() {
                 {' '}picks a prompt
               </p>
             </div>
-            <div className="prompt-arrow-wrap">
-              <div className="prompt-arrow" aria-hidden>
-                <svg viewBox="0 0 120 56" className="prompt-arrow-svg">
-                  <defs>
-                    <linearGradient id="aglow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#fde047" stopOpacity="0.2" />
-                      <stop offset="100%" stopColor="#eab308" stopOpacity="1" />
-                    </linearGradient>
-                    <filter id="aglowf" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur stdDeviation="2.5" result="b" />
-                      <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-                    </filter>
-                  </defs>
-                  <path d="M10 8 Q60 52 110 8" fill="none" stroke="url(#aglow)" strokeWidth="4" strokeLinecap="round" filter="url(#aglowf)" className="prompt-arrow-path" />
-                  <path d="M98 6 L112 8 L100 18" fill="none" stroke="#facc15" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" filter="url(#aglowf)" />
-                </svg>
-              </div>
-              <TableBoard decksClickable showPromptText={false} />
-            </div>
+            <TableBoard decksClickable showPromptText={false} showPromptArrow />
           </div>
         )}
 
@@ -2878,31 +2905,21 @@ function App() {
 
         {gamePhase === 'reveal' && (
           <div className="py-4 scale-in">
-            <div className="text-center mb-2 min-h-[3rem]">
-              {revealAnim === 'gather' && (
-                <p className="text-yellow-400 font-bold text-sm tracking-wide uppercase">Cards moving to center…</p>
-              )}
-              {revealAnim === 'shuffle' && (
-                <p className="text-yellow-400 font-bold text-sm tracking-wide uppercase">Shuffling…</p>
-              )}
-              {revealAnim === 'spread' && (
-                <p className="text-yellow-400 font-bold text-sm tracking-wide uppercase">Lining up…</p>
-              )}
-              {revealAnim === 'flipping' && (
-                <p className="text-yellow-400 font-bold text-sm tracking-wide uppercase">Revealing…</p>
-              )}
-              {revealAnim === 'ready' && (
+            <div className="text-center mb-2 min-h-[2.75rem]">
+              {revealAnim === 'ready' ? (
                 <>
                   <h2 className="text-xl font-black text-yellow-400">Vote for the best card</h2>
-                  <p className="text-zinc-400 text-sm">Tap a card to vote — owners stay hidden</p>
+                  <p className="text-zinc-400 text-sm">Tap a card — owners stay hidden</p>
                 </>
+              ) : (
+                <div className="h-6" aria-hidden />
               )}
             </div>
             <div className={`reveal-stage anim-${revealAnim}`}>
               <TableBoard
-                showPromptText
+                showPromptText={false}
                 showCenterPlayed
-                centerFaceDown={!(revealPhase || (isRevealing && revealStep > 0))}
+                centerFaceDown={revealAnim === 'gather' || revealAnim === 'shuffle' || revealAnim === 'spread' || (revealAnim === 'flipping' && !revealPhase)}
                 centerShowVote={revealAnim === 'ready'}
               />
             </div>

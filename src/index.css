@@ -3928,3 +3928,161 @@ html, body {
     animation: none !important;
   }
 }
+
+
+/* ==========================================================================
+   Arrow, pan scrollbars, commit toward center, stronger reveal motion
+   ========================================================================== */
+
+/* 2 — Hide pan scrollbars (desktop slider) */
+.table-pan-viewport {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
+.table-pan-viewport::-webkit-scrollbar {
+  display: none;                  /* Chrome/Safari */
+  width: 0;
+  height: 0;
+}
+
+/* 1 — Smaller arrow, only above prompt row (does not cover top seats) */
+.prompt-arrow-inline {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  height: 28px;
+  margin-bottom: 2px;
+  pointer-events: none;
+  animation: arrowPulse 1.6s ease-in-out infinite;
+}
+.prompt-arrow-inline .prompt-arrow-svg {
+  width: 72px;
+  height: 28px;
+  overflow: visible;
+}
+.prompt-arrow-wrap { display: contents; }
+.prompt-arrow { display: none; } /* old full-table arrow killed */
+
+/* 4 — Commit slot sits toward CENTER of table from each seat */
+.mini-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.mini-seat-played.toward-center {
+  order: 3;
+  margin-top: 0.35rem;
+}
+.mini-seat.side-top {
+  flex-direction: column;
+}
+.mini-seat.side-top .mini-seat-nameplate { order: 1; }
+.mini-seat.side-top .mini-seat-decks { order: 2; }
+.mini-seat.side-top .mini-seat-played.toward-center {
+  order: 3; /* below decks = toward center */
+  margin-top: 0.4rem;
+}
+.mini-seat.side-bottom {
+  flex-direction: column-reverse; /* name at outer edge, commit toward center */
+}
+.mini-seat.side-bottom .mini-seat-played.toward-center {
+  margin-top: 0;
+  margin-bottom: 0.4rem;
+}
+.mini-seat.side-left,
+.mini-seat.side-right {
+  /* after 90° rotation, flex still stacks; keep commit after decks in DOM = toward center */
+}
+.mini-seat.side-left .mini-seat-played.toward-center,
+.mini-seat.side-right .mini-seat-played.toward-center {
+  margin-top: 0.35rem;
+}
+
+/* 3/5 — Stronger commit spin from deck stack */
+@keyframes commitSpinIn {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.25) rotate(-200deg);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.12) rotate(16deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+.mini-seat-played.commit-spin {
+  animation: commitSpinIn 0.65s cubic-bezier(0.34, 1.35, 0.64, 1) both;
+}
+
+/* Center choreography — larger, clearer stages */
+.felt-played {
+  min-height: 4.5rem;
+  transition: gap 0.35s ease;
+}
+.felt-played.reveal-gather {
+  gap: 0.15rem;
+}
+.felt-played.reveal-gather .felt-played-item {
+  animation: gatherIn 0.75s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.felt-played.reveal-shuffle {
+  gap: 0.1rem;
+}
+.felt-played.reveal-shuffle .felt-played-item {
+  animation: centerShuffle 0.55s ease-in-out infinite;
+}
+.felt-played.reveal-spread,
+.felt-played.reveal-flipping,
+.felt-played.reveal-ready {
+  gap: 0.65rem;
+}
+.felt-played.reveal-spread .felt-played-item {
+  animation: spreadPop 0.6s cubic-bezier(0.34, 1.45, 0.64, 1) both;
+}
+
+/* Big face-down / revealed row */
+.felt-played.is-reveal .felt-played-item .card-rotator.reveal-size {
+  width: 118px !important;
+  min-width: 118px !important;
+  max-width: 118px !important;
+  height: 166px !important;
+}
+
+.felt-played.reveal-gather .card-rotator,
+.felt-played.reveal-shuffle .card-rotator {
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  height: 62px !important;
+}
+
+@keyframes gatherIn {
+  0% { opacity: 0; transform: scale(0.35) translateY(40px); }
+  100% { opacity: 1; transform: scale(0.85) translateY(0); }
+}
+@keyframes centerShuffle {
+  0%, 100% { transform: translateX(0) rotate(0deg) scale(0.85); }
+  30% { transform: translateX(-14px) rotate(-10deg) scale(0.85); }
+  70% { transform: translateX(14px) rotate(10deg) scale(0.85); }
+}
+@keyframes spreadPop {
+  0% { transform: scale(0.55); opacity: 0.7; }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .felt-played.is-reveal .felt-played-item .card-rotator.reveal-size {
+    width: 96px !important;
+    min-width: 96px !important;
+    max-width: 96px !important;
+    height: 134px !important;
+  }
+  .prompt-arrow-inline .prompt-arrow-svg {
+    width: 64px;
+    height: 24px;
+  }
+}
