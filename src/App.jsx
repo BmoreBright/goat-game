@@ -1550,7 +1550,7 @@ function App() {
 
   // ========== TABLE ==========
 
-  const MiniPlayerSeat = ({ idx, side = 'top' }) => {
+  const MiniPlayerSeat = ({ idx, side = 'top', interactiveDecks = false }) => {
     const name = getName(idx);
     const played = playedCards.find(p => p.playerIndex === idx);
     const isTurn = idx === currentPlayer && ['playing', 'voting', 'shorthandedSelect', 'overtimeWriting', 'overtimeVoting', 'freeAgency'].includes(gamePhase);
@@ -1563,21 +1563,28 @@ function App() {
     const showFace = played && !(gamePhase === 'playing' || (gamePhase === 'reveal' && !revealPhase));
     return (
       <div
-        className={`mini-seat side-${side} ${isTurn ? 'is-turn' : ''} ${idx === mySeat ? 'is-me' : ''}`}
+        className={`mini-seat side-${side} ${isTurn ? 'is-turn' : ''} ${idx === mySeat ? 'is-me' : ''} ${interactiveDecks ? 'is-self-seat' : ''}`}
         style={{ '--seat-hue': playerHue(idx) }}
       >
-        <div className="mini-seat-top">
-          <span className="mini-seat-name" style={{ color: playerHue(idx) }}>
-            {name}{idx === mySeat ? ' (you)' : ''}
-          </span>
-          <span className="mini-seat-score">{score}</span>
+        <div className="mini-seat-nameplate">
+          <span className="mini-seat-name">{name}{idx === mySeat || interactiveDecks ? ' (you)' : ''}</span>
+          <div className="mini-seat-chips" title={`${score} pts`}>
+            <ChipStack count={score} />
+          </div>
         </div>
-        {/* Three category decks — same size as table decks */}
         <div className="mini-seat-decks">
           {['player', 'team', 'moment'].map(cat => (
-            <div key={cat} className={`table-deck mini-cat-deck ${cat}`} title={`${cat}: ${counts[cat]}`}>
+            <button
+              key={cat}
+              type="button"
+              className={`table-deck mini-cat-deck ${cat} ${interactiveDecks && hoveredCategory === cat ? 'is-selected' : ''} ${interactiveDecks ? 'is-interactive' : ''}`}
+              title={`${cat}: ${counts[cat]}`}
+              disabled={!interactiveDecks}
+              onClick={() => interactiveDecks && setHoveredCategory(cat)}
+              onMouseEnter={() => interactiveDecks && setHoveredCategory(cat)}
+            >
               <span className="table-deck-count">{counts[cat]}</span>
-            </div>
+            </button>
           ))}
         </div>
         {played && (
@@ -1585,7 +1592,6 @@ function App() {
             <GameCard card={played.card} flipped={!showFace} size="table" disabled />
           </div>
         )}
-        {isTurn && <div className="mini-seat-turn-pip" />}
       </div>
     );
   };
@@ -1743,9 +1749,7 @@ function App() {
 
         {/* You — label only; hand is rendered below by phase UI */}
         <div className="felt-edge felt-edge-bottom">
-          <div className="felt-you-label" style={{ color: playerHue(selfIdx) }}>
-            {getName(selfIdx)}
-          </div>
+          <MiniPlayerSeat idx={selfIdx} side="bottom" interactiveDecks />
         </div>
       </div>
       </div>
@@ -1936,31 +1940,6 @@ function App() {
       )}
 
       {/* Persistent match HUD */}
-      {gamePhase !== 'setup' && gamePhase !== 'gameOver' && (
-        <div className="match-hud relative z-30">
-          <div className="match-hud-inner">
-            <div className="match-hud-left">
-              <span className="match-hud-round">R{roundNumber}</span>
-              <span className="match-hud-dot">·</span>
-              <span className="match-hud-coach" style={{ color: playerHue(currentCoach) }}>
-                👑 {getName(currentCoach)}
-              </span>
-            </div>
-            <div className="match-hud-scores">
-              {Array.from({ length: playerCount }).map((_, i) => (
-                <div key={i} className={`match-hud-pill ${i === currentPlayer && ['playing','voting','freeAgency','shorthandedSelect','overtimeWriting','overtimeVoting'].includes(gamePhase) ? 'is-turn' : ''}`} style={{ borderColor: playerHue(i) }}>
-                  <span className="match-hud-name" style={{ color: playerHue(i) }}>{getName(i).slice(0, 8)}</span>
-                  <span className="match-hud-pts">{scores[i] || 0}</span>
-                </div>
-              ))}
-            </div>
-            <div className="match-hud-right">
-              <span className="match-hud-target">to {targetScore}</span>
-              <span className={`match-hud-phase phase-${gamePhase}`}>{gamePhase}</span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* First-time rule tip */}
       {activeTip && TIP_COPY[activeTip] && (
@@ -2766,7 +2745,7 @@ function App() {
                   </div>
                 )}
 
-                <div className="category-tabs your-decks">
+                <div className="category-tabs your-decks hand-deck-fallback">
                   {['player', 'team', 'moment'].map(cat => {
                     const count = hands[currentPlayer]?.[cat]?.length || 0;
                     const isActive = hoveredCategory === cat;

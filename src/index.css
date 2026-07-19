@@ -3630,3 +3630,153 @@ html, body {
     min-width: 84px;
   }
 }
+
+
+/* ==========================================================================
+   Checklist fixes: orthogonal side seats, clearer backdrop, borderless seats
+   ========================================================================== */
+
+/* 2 — Backdrop less hazy / more visible */
+.arena-slide {
+  filter: saturate(1.05) brightness(0.78) !important;
+  opacity: 0;
+}
+.arena-slide.active {
+  opacity: 1 !important;
+}
+.arena-video {
+  filter: saturate(1.05) brightness(0.72) !important;
+}
+.arena-vignette {
+  background:
+    radial-gradient(ellipse 75% 65% at 50% 45%, transparent 0%, rgba(0,0,0,0.25) 60%, rgba(0,0,0,0.55) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 22%, transparent 70%, rgba(0,0,0,0.5) 100%) !important;
+}
+.arena-grain { opacity: 0.04 !important; }
+.has-arena .table-board,
+.has-arena .felt-table {
+  /* keep table readable but let backdrop through */
+}
+
+/* Felt a bit more transparent so backdrop reads */
+.felt-table {
+  background:
+    radial-gradient(ellipse at center, rgba(22, 101, 52, 0.42) 0%, rgba(20, 83, 45, 0.32) 45%, rgba(5, 46, 22, 0.28) 100%) !important;
+}
+
+/* 4 — Borderless mini seats; hue only on hover / turn / selected deck */
+.felt-table .mini-seat,
+.mini-seat {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  border-radius: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.mini-seat:hover,
+.mini-seat.is-turn {
+  border-color: var(--seat-hue, #eab308) !important;
+  background: rgba(9, 9, 11, 0.35) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--seat-hue, #eab308) 40%, transparent) !important;
+}
+.mini-seat-nameplate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 0.3rem;
+}
+.mini-seat-name {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #e7e5e4;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mini-seat-chips {
+  display: flex;
+  justify-content: center;
+  transform: scale(0.85);
+  transform-origin: top center;
+}
+.mini-seat-chips .chip-count {
+  display: none !important; /* amount is on the top ticker */
+}
+.mini-seat-turn-pip { display: none; }
+
+.mini-cat-deck {
+  border-color: rgba(87, 83, 78, 0.85) !important;
+  cursor: default;
+}
+.mini-cat-deck.is-interactive {
+  cursor: pointer;
+}
+.mini-cat-deck.is-interactive:hover,
+.mini-cat-deck.is-selected {
+  box-shadow: 0 0 0 2px var(--seat-hue, #eab308), 0 4px 10px rgba(0,0,0,0.35) !important;
+  transform: translateY(-2px);
+}
+
+/* 1 — Left / right decks orthogonal to board center */
+.felt-edge-left {
+  flex-direction: column;
+  justify-content: center;
+}
+.felt-edge-right {
+  flex-direction: column;
+  justify-content: center;
+}
+.mini-seat.side-left {
+  transform: rotate(90deg);
+  transform-origin: center center;
+  margin: 1.25rem 0;
+}
+.mini-seat.side-right {
+  transform: rotate(-90deg);
+  transform-origin: center center;
+  margin: 1.25rem 0;
+}
+/* Keep name readable-ish after rotation — decks face center */
+.felt-edge-left .mini-seat-decks,
+.felt-edge-right .mini-seat-decks {
+  flex-direction: row;
+}
+
+/* Self seat at bottom — match opponent deck style, slightly larger hit area */
+.mini-seat.is-self-seat {
+  width: auto;
+  min-width: 140px;
+  padding: 0.35rem 0.5rem;
+}
+.mini-seat.is-self-seat .mini-cat-deck {
+  width: 44px !important;
+  height: 62px !important;
+}
+
+/* Hide obsolete second ticker if any remnant renders */
+.match-hud { display: none !important; }
+
+@media (max-width: 640px) {
+  .mini-seat.side-left,
+  .mini-seat.side-right {
+    margin: 0.65rem 0;
+  }
+  .felt-edge-left,
+  .felt-edge-right {
+    width: 108px;
+  }
+}
+
+@media (min-width: 641px) {
+  .hand-deck-fallback {
+    /* Self seat on felt already exposes the three decks */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+  }
+}
