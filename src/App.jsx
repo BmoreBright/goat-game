@@ -196,6 +196,8 @@ function App() {
   const [videoFailed, setVideoFailed] = useState(false);
   const [revealStep, setRevealStep] = useState(0); // staggered reveal progress
   const [isRevealing, setIsRevealing] = useState(false);
+  /** gather | shuffle | spread | flipping | ready */
+  const [revealAnim, setRevealAnim] = useState('gather');
   const [tipSeen, setTipSeen] = useState({ freeAgency: false, trades: false, shorthanded: false, injured: false });
   const [activeTip, setActiveTip] = useState(null);
   const [holdProgress, setHoldProgress] = useState(0);
@@ -1169,10 +1171,52 @@ function App() {
     }
   };
 
+
+  // Auto-run deal, then go to category (no cutscene gate)
+  useEffect(() => {
+    if (gamePhase !== 'dealing') return undefined;
+    setIsShuffling(true);
+    runDealAnimation();
+    const t1 = setTimeout(() => setIsShuffling(false), 700);
+    const t2 = setTimeout(() => {
+      setGamePhase('category');
+      setIsReady(true);
+    }, 1100);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gamePhase]);
+
+  // When all cards are in, auto-play center gather → shuffle → spread → flip → vote prompt
+  useEffect(() => {
+    if (gamePhase !== 'reveal') return undefined;
+    if (revealPhase || isRevealing) return undefined;
+    setRevealAnim('gather');
+    const reduce = reduceMotion;
+    const tGather = setTimeout(() => setRevealAnim('shuffle'), reduce ? 200 : 700);
+    const tShuffle = setTimeout(() => setRevealAnim('spread'), reduce ? 400 : 1500);
+    const tSpread = setTimeout(() => {
+      setRevealAnim('flipping');
+      startStaggeredReveal();
+    }, reduce ? 600 : 2200);
+    return () => {
+      clearTimeout(tGather);
+      clearTimeout(tShuffle);
+      clearTimeout(tSpread);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gamePhase]);
+
+  useEffect(() => {
+    if (gamePhase === 'reveal' && revealPhase) {
+      setRevealAnim('ready');
+    }
+  }, [gamePhase, revealPhase]);
+
   // ========== PLAY ==========
   const advanceAfterPlay = (newPlayed) => {
     if (newPlayed.length === playerCount) {
       setRevealPhase(false);
+      setRevealAnim('gather');
       setGamePhase('reveal');
       setCurrentPlayer(0);
       setIsReady(true);
@@ -1369,9 +1413,10 @@ function App() {
     if (isRevealing) return;
     sounds.flip();
     setIsRevealing(true);
+    setRevealAnim('flipping');
     setRevealStep(0);
     const n = playedCards.length || 1;
-    const stepMs = reduceMotion ? 80 : 420;
+    const stepMs = reduceMotion ? 80 : 480;
     let step = 0;
     const tick = () => {
       step += 1;
@@ -1382,6 +1427,7 @@ function App() {
       } else {
         setRevealPhase(true);
         setIsRevealing(false);
+        setRevealAnim('ready');
         sounds.ready();
       }
     };
@@ -1553,7 +1599,8 @@ function App() {
   const MiniPlayerSeat = ({ idx, side = 'top', interactiveDecks = false }) => {
     const name = getName(idx);
     const played = playedCards.find(p => p.playerIndex === idx);
-    const isTurn = idx === currentPlayer && ['playing', 'voting', 'shorthandedSelect', 'overtimeWriting', 'overtimeVoting', 'freeAgency'].includes(gamePhase);
+    const isCoachPick = gamePhase === 'category' && idx === currentCoach;
+    const isTurn = isCoachPick || (idx === currentPlayer && ['playing', 'voting', 'shorthandedSelect', 'overtimeWriting', 'overtimeVoting', 'freeAgency'].includes(gamePhase));
     const score = scores[idx] ?? 0;
     const counts = {
       player: hands[idx]?.player?.length || 0,
@@ -1563,11 +1610,11 @@ function App() {
     const showFace = played && !(gamePhase === 'playing' || (gamePhase === 'reveal' && !revealPhase));
     return (
       <div
-        className={`mini-seat side-${side} ${isTurn ? 'is-turn' : ''} ${idx === mySeat ? 'is-me' : ''} ${interactiveDecks ? 'is-self-seat' : ''}`}
+        className={`mini-seat side-${side} ${isTurn ? 'is-turn' : ''} ${isCoachPick ? 'is-coach-pick' : ''} ${idx === mySeat ? 'is-me' : ''} ${interactiveDecks ? 'is-self-seat' : ''}`}
         style={{ '--seat-hue': playerHue(idx) }}
       >
         <div className="mini-seat-nameplate">
-          <span className="mini-seat-name">{name}{idx === mySeat || interactiveDecks ? ' (you)' : ''}</span>
+          <span className={`mini-seat-name ${isCoachPick ? 'name-breathe' : ''}`}>{name}{idx === mySeat || interactiveDecks ? ' (you)' : ''}</span>
           <div className="mini-seat-chips" title={`${score} pts`}>
             <ChipStack count={score} />
           </div>
@@ -1588,7 +1635,7 @@ function App() {
           ))}
         </div>
         {played && (
-          <div className="mini-seat-played">
+          <div className={`mini-seat-played ${justPlayedUid === played.card.uid ? 'commit-spin' : 'commit-rest'}`}>
             <GameCard card={played.card} flipped={!showFace} size="table" disabled />
           </div>
         )}
@@ -1695,7 +1742,7 @@ function App() {
 
             {/* Revealed / played cards (vote by clicking card) */}
             {showCenterPlayed && playedCards.length > 0 && (
-              <div className={`felt-played ${centerShowVote || centerShowResults || revealPhase ? 'is-reveal' : ''}`}>
+              <div className={`felt-played ${centerShowVote || centerShowResults || revealPhase || revealAnim === 'spread' || revealAnim === 'flipping' || revealAnim === 'ready' ? 'is-reveal' : ''} reveal-${revealAnim}`}>
                 {centerOrder.map((origIdx, i) => {
                   const p = playedCards[origIdx];
                   const isOwn = centerShowVote && p.playerIndex === currentPlayer;
@@ -2446,25 +2493,39 @@ function App() {
         )}
 
         {gamePhase === 'dealing' && (
-          <div className="py-6 text-center scale-in">
-            <h2 className="text-2xl font-black text-yellow-400 mb-2">Shuffling & Dealing</h2>
-            <p className="text-zinc-500 text-sm mb-4">Cards fly from the decks to each seat…</p>
+          <div className="py-4 text-center scale-in">
+            <p className="text-yellow-400 text-sm font-bold tracking-wide uppercase mb-3">Dealing cards…</p>
             <TableBoard decksClickable={false} showPromptText={false} />
-            <button onClick={() => { sounds.click(); setGamePhase('category'); }} className="mt-6 px-10 py-4 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-2xl btn-press">
-              Continue →
-            </button>
           </div>
         )}
 
         {gamePhase === 'category' && (
-          <div className="py-6 scale-in">
-            <div className="text-center mb-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 text-sm">
-                Coach — {getName(currentCoach)}
-              </div>
-              <p className="text-zinc-500 text-sm mt-1">Click a prompt deck on the table</p>
+          <div className="py-4 scale-in">
+            <div className="text-center mb-2">
+              <p className="text-sm text-zinc-400">
+                Coach — <span className="name-breathe font-bold" style={{ color: playerHue(currentCoach) }}>{getName(currentCoach)}</span>
+                {' '}picks a prompt
+              </p>
             </div>
-            <TableBoard decksClickable showPromptText={false} />
+            <div className="prompt-arrow-wrap">
+              <div className="prompt-arrow" aria-hidden>
+                <svg viewBox="0 0 120 56" className="prompt-arrow-svg">
+                  <defs>
+                    <linearGradient id="aglow" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fde047" stopOpacity="0.2" />
+                      <stop offset="100%" stopColor="#eab308" stopOpacity="1" />
+                    </linearGradient>
+                    <filter id="aglowf" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="2.5" result="b" />
+                      <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                  </defs>
+                  <path d="M10 8 Q60 52 110 8" fill="none" stroke="url(#aglow)" strokeWidth="4" strokeLinecap="round" filter="url(#aglowf)" className="prompt-arrow-path" />
+                  <path d="M98 6 L112 8 L100 18" fill="none" stroke="#facc15" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" filter="url(#aglowf)" />
+                </svg>
+              </div>
+              <TableBoard decksClickable showPromptText={false} />
+            </div>
           </div>
         )}
 
@@ -2816,40 +2877,45 @@ function App() {
         )}
 
         {gamePhase === 'reveal' && (
-          <div className="py-6 scale-in">
-            <div className="text-center mb-3">
-              <h2 className="text-2xl font-black text-yellow-400 mb-1">
-                {revealPhase ? 'Cards Revealed' : 'All Cards In'}
-              </h2>
-              <p className="text-zinc-500 text-sm">
-                {revealPhase
-                  ? 'Anonymous cards in the center — ready to vote.'
-                  : 'Played cards moved to center, face-down.'}
-              </p>
-            </div>
-            <TableBoard
-              showPromptText
-              showCenterPlayed
-              centerFaceDown={!revealPhase}
-            />
-            <div className="text-center mt-6">
-              {!revealPhase ? (
-                <button
-                  onClick={startStaggeredReveal}
-                  disabled={isRevealing}
-                  className="px-10 py-4 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 text-black font-bold rounded-2xl btn-press"
-                >
-                  {isRevealing ? `Revealing… ${revealStep}/${playedCards.length}` : 'Reveal Cards'}
-                </button>
-              ) : (
-                <button
-                  onClick={() => { sounds.click(); setGamePhase('voting'); setCurrentPlayer(0); setIsReady(false); }}
-                  className="px-10 py-4 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-2xl btn-press"
-                >
-                  Start Voting →
-                </button>
+          <div className="py-4 scale-in">
+            <div className="text-center mb-2 min-h-[3rem]">
+              {revealAnim === 'gather' && (
+                <p className="text-yellow-400 font-bold text-sm tracking-wide uppercase">Cards moving to center…</p>
+              )}
+              {revealAnim === 'shuffle' && (
+                <p className="text-yellow-400 font-bold text-sm tracking-wide uppercase">Shuffling…</p>
+              )}
+              {revealAnim === 'spread' && (
+                <p className="text-yellow-400 font-bold text-sm tracking-wide uppercase">Lining up…</p>
+              )}
+              {revealAnim === 'flipping' && (
+                <p className="text-yellow-400 font-bold text-sm tracking-wide uppercase">Revealing…</p>
+              )}
+              {revealAnim === 'ready' && (
+                <>
+                  <h2 className="text-xl font-black text-yellow-400">Vote for the best card</h2>
+                  <p className="text-zinc-400 text-sm">Tap a card to vote — owners stay hidden</p>
+                </>
               )}
             </div>
+            <div className={`reveal-stage anim-${revealAnim}`}>
+              <TableBoard
+                showPromptText
+                showCenterPlayed
+                centerFaceDown={!(revealPhase || (isRevealing && revealStep > 0))}
+                centerShowVote={revealAnim === 'ready'}
+              />
+            </div>
+            {revealAnim === 'ready' && (
+              <div className="text-center mt-4">
+                <button
+                  onClick={() => { sounds.click(); setGamePhase('voting'); setCurrentPlayer(0); setIsReady(false); }}
+                  className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-2xl btn-press"
+                >
+                  Begin voting rounds →
+                </button>
+              </div>
+            )}
           </div>
         )}
 
