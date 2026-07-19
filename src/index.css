@@ -4551,3 +4551,68 @@ html, body {
   margin-top: 0.35rem;
   padding-top: 0.25rem;
 }
+
+
+/* ==========================================================================
+   SHIP FIX: restore deck / prompt art on live-table classes
+   Paths unchanged from original game assets
+   ========================================================================== */
+.ms-deck.player,
+.lt-deck.player {
+  background: url('/cards/back-player.jpg') center/cover, #1e3a8a !important;
+  border-color: #3b82f6 !important;
+}
+.ms-deck.team,
+.lt-deck.team {
+  background: url('/cards/back-team.jpg') center/cover, #065f46 !important;
+  border-color: #10b981 !important;
+}
+.ms-deck.moment,
+.lt-deck.moment {
+  background: url('/cards/back-moment.jpg') center/cover, #5b21b6 !important;
+  border-color: #8b5cf6 !important;
+}
+
+.lt-draw {
+  background: url('/cards/back-draw.jpg') center/cover, #1c1917 !important;
+  border-color: #a16207 !important;
+}
+.lt-discard:not(.empty) {
+  background: url('/cards/back-draw.jpg') center/cover, #292524 !important;
+  border-color: #78716c !important;
+}
+
+.lt-deck.prompt-player,
+.prompt-player {
+  background: url('/cards/prompt-player.jpg') center/cover, #1e3a8a !important;
+  border-color: #3b82f6 !important;
+}
+.lt-deck.prompt-team,
+.prompt-team {
+  background: url('/cards/prompt-team.jpg') center/cover, #065f46 !important;
+  border-color: #10b981 !important;
+}
+.lt-deck.prompt-moment,
+.prompt-moment {
+  background: url('/cards/prompt-moment.jpg') center/cover, #5b21b6 !important;
+  border-color: #8b5cf6 !important;
+}
+
+/* Ensure face cards still use face art */
+.card-front-player { background-image: url('/cards/face-player.jpg') !important; }
+.card-front-team { background-image: url('/cards/face-team.jpg') !important; }
+.card-front-moment { background-image: url('/cards/face-moment.jpg') !important; }
+.card-back-player { background-image: url('/cards/back-player.jpg') !important; }
+.card-back-team { background-image: url('/cards/back-team.jpg') !important; }
+.card-back-moment { background-image: url('/cards/back-moment.jpg') !important; }
+
+/* Tab deck art in hand fallback */
+.tab-deck-art.player { background: url('/cards/back-player.jpg') center/cover, #1e3a8a !important; }
+.tab-deck-art.team { background: url('/cards/back-team.jpg') center/cover, #065f46 !important; }
+.tab-deck-art.moment { background: url('/cards/back-moment.jpg') center/cover, #5b21b6 !important; }
+
+/* Hide text fallback when image present */
+.ms-deck span,
+.lt-deck span {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.85);
+}

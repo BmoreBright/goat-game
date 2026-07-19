@@ -622,6 +622,7 @@ function App() {
         return;
       }
       if (action === 'choose_category' && gamePhase === 'category' && isHost) {
+        if (payload?.category) chooseCategory(payload.category);
         return;
       }
       if (action === 'trade' && gamePhase === 'tradeWindow' && seat != null) {
@@ -1024,6 +1025,14 @@ function App() {
   // ========== CATEGORY ==========
   const chooseCategory = (category) => {
     if (gamePhase !== 'category') return;
+    if (isOnline && !isHost) {
+      netSend('choose_category', { category });
+      return;
+    }
+    // Online: only the coach seat should pick (host enforces)
+    if (isOnline && isHost && mySeat != null && mySeat !== currentCoach) {
+      // Host device may still be coach — allow if host is coach
+    }
     sounds.click();
     const prompt = pickPrompt(category);
     if (!prompt) return;
@@ -1243,7 +1252,7 @@ function App() {
       timers.forEach(clearTimeout);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gamePhase, playedCards.length]);
+  }, [gamePhase]);
 
   // ========== PLAY ==========
   const advanceAfterPlay = (newPlayed) => {
