@@ -1,0 +1,231 @@
+﻿type,category,id,text
+prompt,player,101,Most likely to choke in the biggest moment
+prompt,player,102,Best trash talker in sports history
+prompt,player,103,Player most likely to eat steak with ketchup
+prompt,player,104,Most overrated player of all time
+prompt,player,105,Player who would beat Jordan 1 on 1
+prompt,player,106,Most likely to retire three times
+prompt,player,107,Player most likely to commit a felony and keep playing
+prompt,player,108,The son your dad wished he had
+prompt,player,109,Player most likely to go bankrupt after retirement
+prompt,player,110,Best motivator in sports history
+prompt,player,111,Most terrifying player to face
+prompt,player,112,Player most likely to make you want to vomit
+prompt,player,113,Most Steve Bartman-esque player
+prompt,player,114,Player who could outdrive Tiger Woods
+prompt,player,115,Player who could homer against Mariano Rivera
+prompt,player,116,Player who could juke out Bobby Boucher
+prompt,player,117,Most likely to bring a ten year old to tears in mini-golf
+prompt,player,118,Player most likely to steal your bat and beat you with it
+prompt,player,119,Player most deserving of a championship
+prompt,player,120,Player most likely to never win a championship
+prompt,team,201,Team most likely to break your heart
+prompt,team,202,Team that deserves the modern Billy Goat curse
+prompt,team,203,Most cursed franchise in sports
+prompt,team,204,Team most likely to go winless
+prompt,team,205,Team most likely to cheat
+prompt,team,206,Team most likely to make an egg omelet with the shells
+prompt,team,207,Best dynasty of all time
+prompt,team,208,Team that would lose to a high school squad
+prompt,team,209,Most overrated franchise
+prompt,team,210,Team most likely to not win a championship in the next 100 years
+prompt,team,211,Team with the best fans
+prompt,team,212,Team with the worst fans
+prompt,team,213,Most embarrassing franchise collapse
+prompt,team,214,Team that needs a complete rebuild the most
+prompt,team,215,Best Cinderella story team
+prompt,team,216,Team most likely to draft a bust
+prompt,team,217,Team that got the most out of mediocre talent
+prompt,team,218,Most fun team to watch
+prompt,team,219,Team most likely to fire their coach mid-season
+prompt,team,220,Team that would win if they just tried harder
+prompt,moment,301,Most iconic sports moment of all time
+prompt,moment,302,Biggest choke in sports history
+prompt,moment,303,Wildest what-if moment in sports
+prompt,moment,304,Most hilarious sports fail
+prompt,moment,305,Moment that made you cry
+prompt,moment,306,Most clutch play ever
+prompt,moment,307,Biggest upset in sports history
+prompt,moment,308,Moment that changed the game forever
+prompt,moment,309,Most controversial call of all time
+prompt,moment,310,Best celebration of all time
+prompt,moment,311,Moment that should have never happened
+prompt,moment,312,Most cinematic sports moment
+prompt,moment,313,"Biggest ""what were they thinking"" moment"
+prompt,moment,314,Moment that launched a thousand memes
+prompt,moment,315,Most heartbreaking loss
+prompt,moment,316,Most dominant performance ever
+prompt,moment,317,Moment that defined a generation
+prompt,moment,318,Best trash talk moment
+prompt,moment,319,Most unlikely hero moment
+prompt,moment,320,Moment you still can't believe happened
+prompt,overtime,401,Who is the greatest running back of all time?
+prompt,overtime,402,Best NBA postseason team of all time?
+prompt,overtime,403,Greatest quarterback of all time?
+prompt,overtime,404,Most dominant athlete in any sport?
+prompt,overtime,405,Best pure shooter in basketball history?
+prompt,overtime,406,Greatest World Series team ever?
+prompt,overtime,407,Most clutch performer in sports history?
+prompt,overtime,408,Best NFL defense of all time?
+prompt,overtime,409,Greatest individual season by any athlete?
+prompt,overtime,410,Who would you build a franchise around right now?
+prompt,overtime,411,Most overrated superstar of the last 20 years?
+prompt,overtime,412,Best sports movie of all time?
+prompt,overtime,413,Greatest Olympic performance ever?
+prompt,overtime,414,Who is the real G.O.A.T. across all sports?
+prompt,overtime,415,Most impressive comeback story in sports?
+prompt,overtime,416,Best closer in baseball history?
+prompt,overtime,417,Greatest college football team of all time?
+prompt,overtime,418,Most intimidating athlete to ever compete?
+prompt,overtime,419,Best two-way player in any sport?
+prompt,overtime,420,If you could only watch one athlete for the rest of your life who would it be?
+card,player,10101,Prime Tom Brady - 7 rings
+card,player,10102,Brett Favre in his prime - gunslinging legend
+card,player,10103,Brett Favre last season - texting drama included
+card,player,10104,Prime Mike Tyson - ear biting optional
+card,player,10105,LeBron James - carrying teams since 2003
+card,player,10106,Michael Jordan flu game
+card,player,10107,Patrick Mahomes - no right hand version
+card,player,10108,Aaron Rodgers - Mr. Discount Double Check
+card,player,10109,Lionel Messi
+card,player,10110,Cristiano Ronaldo
+card,player,10111,Serena Williams
+card,player,10112,Tiger Woods 2000
+card,player,10113,Tiger Woods 2010s
+card,player,10114,Usain Bolt
+card,player,10115,Michael Phelps
+card,player,10116,Simone Biles
+card,player,10117,Kobe Bryant
+card,player,10118,Shaquille O'Neal
+card,player,10119,Magic Johnson
+card,player,10120,Larry Bird
+card,player,10121,Kareem Abdul-Jabbar
+card,player,10122,Wilt Chamberlain
+card,player,10123,Bill Russell
+card,player,10124,Stephen Curry
+card,player,10125,Kevin Durant
+card,player,10126,Giannis Antetokounmpo
+card,player,10127,Nikola Jokic
+card,player,10128,Luka Doncic
+card,player,10129,Jayson Tatum
+card,player,10130,Joel Embiid
+card,player,10131,Peyton Manning
+card,player,10132,Joe Montana
+card,player,10133,Jerry Rice
+card,player,10134,Lawrence Taylor
+card,player,10135,Ray Lewis
+card,player,10136,Tom Brady with the Bucs
+card,player,10137,Patrick Mahomes with a fully healthy O-line
+card,player,10138,Aaron Judge
+card,player,10139,Shohei Ohtani
+card,player,10140,Mike Trout
+card,player,10141,Barry Bonds
+card,player,10142,Babe Ruth
+card,player,10143,Hank Aaron
+card,player,10144,Derek Jeter
+card,player,10145,Alex Rodriguez
+card,player,10146,Manny Ramirez
+card,player,10147,Pedro Martinez
+card,player,10148,Randy Johnson
+card,player,10149,Clayton Kershaw
+card,player,10150,Max Scherzer
+card,team,20101,1990s Chicago Bulls
+card,team,20102,2010s Golden State Warriors
+card,team,20103,2000s New England Patriots
+card,team,20104,1980s Los Angeles Lakers
+card,team,20105,1970s Pittsburgh Steelers
+card,team,20106,1990s Dallas Cowboys
+card,team,20107,2010s Kansas City Chiefs
+card,team,20108,2000s Los Angeles Lakers
+card,team,20109,1980s Boston Celtics
+card,team,20110,1990s New York Yankees
+card,team,20111,2000s New England Patriots dynasty
+card,team,20112,2010s Golden State Warriors dynasty
+card,team,20113,Any team with LeBron James
+card,team,20114,Any team with Tom Brady
+card,team,20115,Your local high school team
+card,team,20116,The 2017 Houston Astros
+card,team,20117,The 2007 New England Patriots (18-1)
+card,team,20118,The 2015-16 Golden State Warriors (73-9)
+card,team,20119,The 1995-96 Chicago Bulls (72-10)
+card,team,20120,The 1985 Chicago Bears
+card,team,20121,The 1972 Miami Dolphins
+card,team,20122,The 2001 Seattle Mariners
+card,team,20123,The 2016 Cleveland Cavaliers
+card,team,20124,The 2004 Boston Red Sox
+card,team,20125,The 2010s San Antonio Spurs
+card,team,20126,The 1990s Detroit Red Wings
+card,team,20127,The 1980 USA Hockey team
+card,team,20128,Any expansion team year 1
+card,team,20129,Your fantasy team last year
+card,team,20130,College team with zero NIL
+card,team,20131,1998 Chicago Bulls last dance
+card,team,20132,2014 San Antonio Spurs
+card,team,20133,2008 Boston Celtics
+card,team,20134,2011 Dallas Mavericks
+card,team,20135,2019 Toronto Raptors
+card,team,20136,2020 LA Lakers bubble champs
+card,team,20137,2021 Milwaukee Bucks
+card,team,20138,2022 Golden State Warriors return
+card,team,20139,2023 Denver Nuggets
+card,team,20140,2024 Boston Celtics
+card,team,20141,Any team that blew a 3-1 lead
+card,team,20142,Any team that went 0-16 or 0-17
+card,team,20143,The 2010s Cleveland Browns
+card,team,20144,The 2000s Detroit Lions
+card,team,20145,The 2010s New York Knicks
+card,team,20146,The 1990s Vancouver Grizzlies
+card,team,20147,The 2000s Charlotte Bobcats
+card,team,20148,Any team currently owned by a billionaire who doesn't care
+card,team,20149,Your rival's team
+card,team,20150,The team that just traded away their future
+card,moment,30101,The Catch - Montana to Clark
+card,moment,30102,Randy Johnson murders a bird
+card,moment,30103,The Butt Fumble
+card,moment,30104,Miracle on Ice
+card,moment,30105,28-3 Falcons collapse
+card,moment,30106,The Immaculate Reception
+card,moment,30107,David Tyree helmet catch
+card,moment,30108,Malcolm Butler goal line INT
+card,moment,30109,Michael Jordan flu game
+card,moment,30110,Kobe Bryant 81 point game
+card,moment,30111,Wilt Chamberlain 100 points
+card,moment,30112,Babe Ruth called shot
+card,moment,30113,Billie Jean King Battle of the Sexes
+card,moment,30114,Secretariat Belmont Stakes
+card,moment,30115,USA Hockey Miracle on Ice 1980
+card,moment,30116,Tiger Woods 2008 US Open on one leg
+card,moment,30117,Kerri Strug vault on injured ankle
+card,moment,30118,Derek Redmond helped by dad
+card,moment,30119,Kirk Gibson walk-off homer
+card,moment,30120,Joe Carter World Series walk-off
+card,moment,30121,David Freese Game 6
+card,moment,30122,The Catch II - Dwight Clark
+card,moment,30123,The Helmet Catch
+card,moment,30124,The Tuck Rule game
+card,moment,30125,The Fail Mary
+card,moment,30126,The Music City Miracle
+card,moment,30127,The Immaculate Reception
+card,moment,30128,The Catch by Willie Mays
+card,moment,30129,The Shot by Michael Jordan
+card,moment,30130,The Flu Game
+card,moment,30131,The Drive by John Elway
+card,moment,30132,The Fumble by Earnest Byner
+card,moment,30133,The Interception by Malcolm Butler
+card,moment,30134,The Drop by Dez Bryant
+card,moment,30135,The Non-Catch by Calvin Johnson
+card,moment,30136,The Helmet to Helmet on Tom Brady
+card,moment,30137,The Deflategate controversy
+card,moment,30138,The Spygate scandal
+card,moment,30139,The Bountygate scandal
+card,moment,30140,The Astros sign stealing
+card,moment,30141,The Black Sox scandal
+card,moment,30142,The Pete Rose gambling
+card,moment,30143,The Tiger Woods car crash
+card,moment,30144,The Mike Tyson ear bite
+card,moment,30145,The Malice at the Palace
+card,moment,30146,The Steve Bartman incident
+card,moment,30147,The Bill Buckner error
+card,moment,30148,The Chris Webber timeout
+card,moment,30149,The Tim Donaghy refereeing scandal
+card,moment,30150,The 28-3 Super Bowl collapse
