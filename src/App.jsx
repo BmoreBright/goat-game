@@ -91,11 +91,7 @@ const ChipStack = ({ count, large = false }) => {
 
 const OnlineSelfReady = ({ onReady }) => {
   useEffect(() => { onReady(); }, [onReady]);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/90">
-      <p className="text-yellow-400 font-bold">Your turn…</p>
-    </div>
-  );
+  return null; // immediately ready — no extra screen
 };
 
 const PLAYER_HUES = ['#eab308', '#38bdf8', '#f472b6', '#a3e635', '#fb923c', '#c084fc', '#2dd4bf', '#f87171'];
@@ -189,6 +185,7 @@ function App() {
   const [netStatus, setNetStatus] = useState({ connected: false, roomCode: null, isHost: false, seat: null, players: [], error: null });
   const [joinCode, setJoinCode] = useState('');
   const [lobbyName, setLobbyName] = useState('');
+  const [voiceOn, setVoiceOn] = useState(false);
   const netRef = useRef(null);
   const isOnline = playMode === 'online';
   const mySeat = netStatus.seat;
@@ -715,11 +712,27 @@ function App() {
   const needsPrivacy = ['freeAgency', 'playing', 'voting', 'shorthandedSelect', 'overtimeWriting'].includes(gamePhase);
 
   useEffect(() => {
-    if (needsPrivacy) setIsReady(false);
-    else setIsReady(true);
     setHoveredCategory(null);
     setHoveredCardUid(null);
-  }, [gamePhase, currentPlayer, freeAgencyStep.player, currentOTWriter]);
+
+    if (!needsPrivacy) {
+      setIsReady(true);
+      return;
+    }
+
+    // Online: auto-ready only when it is THIS client's private turn
+    if (isOnline) {
+      let myTurn = false;
+      if (gamePhase === 'freeAgency') myTurn = mySeat === freeAgencyStep.player;
+      else if (gamePhase === 'overtimeWriting') myTurn = mySeat === overtimePlayers[currentOTWriter];
+      else myTurn = mySeat === currentPlayer;
+      setIsReady(!!myTurn);
+      return;
+    }
+
+    // Local pass-and-play: always require the hold-to-reveal gate
+    setIsReady(false);
+  }, [gamePhase, currentPlayer, freeAgencyStep.player, currentOTWriter, isOnline, mySeat, overtimePlayers]);
 
   const triggerChipFly = (winnerIdx, points = 1) => {
     setLastWinner(winnerIdx);
@@ -1670,10 +1683,11 @@ function App() {
   );
 
   const PassScreen = ({ playerIdx, actionLabel }) => {
-    // Online: only the seated player acts on their device — others wait
+    // ---------- ONLINE ----------
     if (isOnline) {
       const mine = mySeat === playerIdx;
       if (!mine) {
+        // Someone else's private turn — just wait
         return (
           <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-center bg-zinc-950/95">
             <div className="w-10 h-10 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin mb-4" />
@@ -1683,12 +1697,13 @@ function App() {
           </div>
         );
       }
-      // It's me — skip hold gate
+      // My turn — no pass gate, go straight to the real UI
       if (!isReady) {
         return <OnlineSelfReady onReady={() => setIsReady(true)} />;
       }
+      return null;
     }
-    // Online-aware pass (local mode below)
+    // ---------- LOCAL (pass-the-device) ----------
 
     const hue = playerHue(playerIdx);
     const startHold = () => {
@@ -2110,6 +2125,27 @@ function App() {
                         ) : (
                           <p className="net-hint">Waiting for host to start the debate…</p>
                         )}
+
+                        {/* Voice chat (Daily.co scaffold) */}
+                        <div className="mt-4 pt-3 border-t border-zinc-800">
+                          <button
+                            type="button"
+                            className={`net-btn w-full ${voiceOn ? 'primary' : ''}`}
+                            onClick={() => {
+                              sounds.click();
+                              const room = netStatus.roomCode;
+                              if (!room) return;
+                              // Opens a Daily.co room named after the game room code.
+                              // Create a free account at https://daily.co and set your domain if you want custom branding.
+                              const url = `https://goat-debate.daily.co/${room}`;
+                              window.open(url, 'goat-voice', 'width=420,height=640');
+                              setVoiceOn(true);
+                            }}
+                          >
+                            {voiceOn ? 'Voice room opened' : 'Join Voice Chat'}
+                          </button>
+                          <p className="net-hint mt-1">Opens a shared voice room for this game code</p>
+                        </div>
                       </div>
                     )}
                   </div>
