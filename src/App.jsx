@@ -181,6 +181,18 @@ function App() {
   const [holdProgress, setHoldProgress] = useState(0);
   const holdTimerRef = useRef(null);
   const reduceMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const requestAppFullscreen = () => {
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (req) {
+      req.call(el).catch(() => {});
+      return true;
+    }
+    // iOS Safari: fullscreen API is limited — prompt install instead
+    alert('For a full-screen app experience on iPhone: tap Share → Add to Home Screen. Then open G.O.A.T. from your home screen.');
+    return false;
+  };
   const [playMode, setPlayMode] = useState('local'); // 'local' | 'online'
   const [netStatus, setNetStatus] = useState({ connected: false, roomCode: null, isHost: false, seat: null, players: [], error: null });
   const [joinCode, setJoinCode] = useState('');
@@ -1522,164 +1534,96 @@ function App() {
     centerShowVote = false,
     centerShowResults = false
   }) => (
-    <div className={`table-board table-shape-${tableShape} seats-${playerCount}`}>
-      {dealAnims.map(a => (
-        <div
-          key={a.id}
-          className="deal-fly"
-          style={{ '--dx': `${a.dx}px`, '--dy': `${a.dy}px`, animationDelay: `${a.delay}ms` }}
-        />
-      ))}
-
-      <div className="table-center">
-        {/* Prompt decks — chalk slots */}
-        <div className="table-zone table-zone-prompts">
-          <div className="zone-title">Prompts</div>
-          <div className="prompt-decks">
-            {['player', 'team', 'moment'].map(cat => (
-              <div
-                key={cat}
-                className={`chalk-slot prompt-deck ${decksClickable ? 'clickable' : ''} ${currentPrompt?.category === cat ? 'active-cat' : ''}`}
-                onClick={() => decksClickable && chooseCategory(cat)}
-              >
-                <div className={`deck-stack ${cat} ${isShuffling ? 'shuffle-anim' : ''}`} />
-                <span className={`deck-label ${cat}`}>{cat}</span>
-              </div>
-            ))}
-          </div>
+    <div className="game-stage">
+      {/* Category picker */}
+      {(decksClickable || showPromptText) && (
+        <div className="stage-categories">
+          {['player', 'team', 'moment'].map(cat => (
+            <button
+              key={cat}
+              type="button"
+              className={`stage-cat-btn ${cat} ${currentPrompt?.category === cat ? 'active' : ''} ${decksClickable ? 'clickable' : ''}`}
+              onClick={() => decksClickable && chooseCategory(cat)}
+              disabled={!decksClickable}
+            >
+              <span className="stage-cat-name">{cat}</span>
+              {decksClickable && <span className="stage-cat-hint">Tap to play</span>}
+            </button>
+          ))}
         </div>
+      )}
 
-        {/* Draw + Discard — chalk slots */}
-        <div className="table-zone table-zone-supply">
-          <div
-            className="chalk-slot supply-slot"
-            title="Draw pile — new cards come from here"
-          >
-            <div className={`deck-stack draw ${isShuffling ? 'shuffle-anim' : ''}`}>
-              <span className="deck-count">
-                {(decks.player?.length || 0) + (decks.team?.length || 0) + (decks.moment?.length || 0)}
-              </span>
-            </div>
-            <span className="deck-label supply">Draw</span>
-          </div>
-          <div
-            className="chalk-slot supply-slot"
-            title="Discard pile — played and traded cards go here"
-          >
-            <div className={`deck-stack discard ${((discards.player?.length || 0) + (discards.team?.length || 0) + (discards.moment?.length || 0)) > 0 ? 'has-cards' : 'empty'}`}>
-              <span className="deck-count">
-                {(discards.player?.length || 0) + (discards.team?.length || 0) + (discards.moment?.length || 0)}
-              </span>
-            </div>
-            <span className="deck-label supply">Discard</span>
-          </div>
+      {/* Prompt */}
+      {showPromptText && currentPrompt && (
+        <div className={`stage-prompt cat-${currentPrompt.category}`}>
+          <span className="stage-prompt-badge">{currentPrompt.category}</span>
+          <p className="stage-prompt-text">{currentPrompt.text}</p>
         </div>
+      )}
 
-        {showPromptText && currentPrompt && (
-          <div className={`broadcast-lower-third cat-${currentPrompt.category}`}>
-            <div className="blt-badge">{currentPrompt.category}</div>
-            <p className="blt-text">{currentPrompt.text}</p>
-          </div>
-        )}
-
-        {showCenterPlayed && playedCards.length > 0 && (
-          <div className="center-played">
-            {centerOrder.map((origIdx, i) => {
-              const p = playedCards[origIdx];
-              const isOwn = centerShowVote && p.playerIndex === currentPlayer;
-              const voteCount = centerShowResults ? (tally[origIdx] || 0) : 0;
-              const isWinner = centerShowResults && origIdx === winnerIndex;
-
-              // During staggered reveal: face-down until this index is revealed
-              const faceDown = centerFaceDown
-                ? true
-                : (isRevealing ? i >= revealStep : false);
-              return (
-                <div key={p.card.uid} className={`center-played-item ${isWinner ? 'winner-pulse' : ''}`}>
-                  <GameCard
-                    card={p.card}
-                    flipped={faceDown}
-                    disabled={!centerShowVote || isOwn}
-                    size="reveal"
-                    flyIn
-                    delayClass={`reveal-delay-${Math.min(i, 5)}`}
-                    className={isOwn ? 'opacity-40 grayscale' : ''}
-                    showOwner={isOwn || (!faceDown && centerShowResults)}
-                    ownerName={isOwn ? 'Your card' : (centerShowResults ? getName(p.playerIndex) : '')}
-                  />
-                  {centerShowVote && !isOwn && (
-                    <button
-                      onClick={() => castVote(origIdx)}
-                      className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-xs btn-press"
-                    >
-                      Vote
-                    </button>
-                  )}
-                  {centerShowVote && isOwn && (
-                    <span className="text-red-400/80 text-xs font-medium">Your card</span>
-                  )}
-                  {centerShowResults && (
-                    <div className="text-sm">
-                      <span className="font-bold">{voteCount} vote{voteCount !== 1 ? 's' : ''}</span>
-                      {isWinner && <span className="ml-1 text-yellow-400 font-black text-xs">WIN</span>}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+      {/* Compact supply counts */}
+      <div className="stage-supply">
+        <span>Draw {(decks.player?.length || 0) + (decks.team?.length || 0) + (decks.moment?.length || 0)}</span>
+        <span className="stage-supply-dot">·</span>
+        <span>Discard {(discards.player?.length || 0) + (discards.team?.length || 0) + (discards.moment?.length || 0)}</span>
       </div>
 
-      <div className="table-felt-marks" aria-hidden="true" />
-
-      {Array.from({ length: playerCount }).map((_, i) => {
-        const played = playedCards.find(p => p.playerIndex === i);
-        const layout = getSeatLayout(i);
-        let seatStatus = 'idle';
-        if (gamePhase === 'playing') {
-          if (played) seatStatus = 'played';
-          else if (i === currentPlayer) seatStatus = 'active';
-          else if (i < currentPlayer) seatStatus = 'played';
-          else seatStatus = 'waiting';
-        } else if (gamePhase === 'voting') {
-          if (votes[i] !== undefined) seatStatus = 'played';
-          else if (i === currentPlayer && isReady) seatStatus = 'active';
-          else seatStatus = 'waiting';
-        } else if (gamePhase === 'reveal') {
-          seatStatus = played ? 'played' : 'idle';
-        }
-        return (
-          <div
-            key={i}
-            className={`seat seat-${i} seat-status-${seatStatus} ${lastWinner === i ? 'is-winner' : ''}`}
-            style={layout.position}
-          >
-            <div className="seat-status-ring" style={{ '--seat-hue': playerHue(i) }} aria-hidden />
-            <div className="seat-cards-row">
-              <div className="seat-decks">
-                {['player', 'team', 'moment'].map(cat => (
-                  <div key={cat} className={`mini-deck ${cat}`} title={`${cat}: ${hands[i]?.[cat]?.length ?? 0}`}>
-                    <span>{hands[i]?.[cat]?.length ?? 0}</span>
+      {/* Played cards */}
+      {showCenterPlayed && playedCards.length > 0 && (
+        <div className="stage-played">
+          {centerOrder.map((origIdx, i) => {
+            const p = playedCards[origIdx];
+            const isOwn = centerShowVote && p.playerIndex === currentPlayer;
+            const voteCount = centerShowResults ? (tally[origIdx] || 0) : 0;
+            const isWinner = centerShowResults && origIdx === winnerIndex;
+            const faceDown = centerFaceDown
+              ? true
+              : (isRevealing ? i >= revealStep : false);
+            return (
+              <div key={p.card.uid} className={`stage-played-item ${isWinner ? 'winner-pulse' : ''}`}>
+                <GameCard
+                  card={p.card}
+                  flipped={faceDown}
+                  size="reveal"
+                  showOwner={centerShowResults || (!faceDown && !centerShowVote)}
+                  ownerName={getName(p.playerIndex)}
+                  disabled={centerShowVote && isOwn}
+                />
+                {centerShowVote && !isOwn && (
+                  <button
+                    type="button"
+                    className="stage-vote-btn"
+                    onClick={() => castVote(origIdx)}
+                  >
+                    Vote
+                  </button>
+                )}
+                {centerShowResults && (
+                  <div className="stage-vote-count">
+                    {voteCount} vote{voteCount !== 1 ? 's' : ''}
+                    {isWinner && <span className="text-yellow-400 font-black"> WIN</span>}
                   </div>
-                ))}
-              </div>
-              <div className="seat-card-slot">
-                {showSeatPlayed && played && (
-                  <GameCard card={played.card} flipped disabled size="table" />
                 )}
               </div>
-            </div>
+            );
+          })}
+        </div>
+      )}
 
-            <div className="seat-hud">
-              <div className={`seat-name ${i === currentCoach ? 'is-coach' : ''}`}>
-                {i === currentCoach ? '👑 ' : ''}{getName(i)}
+      {/* Optional: whose card is sitting out during play */}
+      {showSeatPlayed && (
+        <div className="stage-seats-strip">
+          {Array.from({ length: playerCount }).map((_, i) => {
+            const played = playedCards.find(p => p.playerIndex === i);
+            return (
+              <div key={i} className="stage-seat-chip" style={{ borderColor: playerHue(i) }}>
+                <span style={{ color: playerHue(i) }}>{getName(i)}</span>
+                <span className="text-zinc-500 text-xs">{played ? 'In' : '…'}</span>
               </div>
-              <ChipStack count={scores[i] || 0} />
-            </div>
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 
@@ -3059,6 +3003,13 @@ function App() {
             <span className="bottom-tray-grip-bar" />
           </button>
           <div className="bottom-tray-panel">
+            <button
+              type="button"
+              className="bottom-tray-end"
+              onClick={() => { sounds.click(); requestAppFullscreen(); }}
+            >
+              Full Screen
+            </button>
             <button
               type="button"
               onClick={() => {
