@@ -1206,14 +1206,14 @@ function App() {
       timers.push(id);
     };
 
-    later(() => setRevealAnim('shuffle'), reduce ? 250 : 800);
-    later(() => setRevealAnim('spread'), reduce ? 500 : 1700);
+    later(() => setRevealAnim('shuffle'), reduce ? 300 : 1100);
+    later(() => setRevealAnim('spread'), reduce ? 650 : 2400);
     later(() => {
       setRevealAnim('flipping');
       setIsRevealing(true);
       setRevealStep(0);
       const n = Math.max(1, playedCards.length);
-      const stepMs = reduce ? 90 : 520;
+      const stepMs = reduce ? 100 : 700;
       let step = 0;
       const tick = () => {
         if (cancelled) return;
@@ -1227,10 +1227,16 @@ function App() {
           setIsRevealing(false);
           setRevealAnim('ready');
           sounds.ready();
+          // Brief beat on the revealed row, then open voting (no extra click)
+          later(() => {
+            setGamePhase('voting');
+            setCurrentPlayer(0);
+            setIsReady(true);
+          }, reduce ? 400 : 1400);
         }
       };
       later(tick, stepMs);
-    }, reduce ? 750 : 2600);
+    }, reduce ? 900 : 3200);
 
     return () => {
       cancelled = true;
@@ -1642,6 +1648,9 @@ function App() {
       >
         <div className="mini-seat-nameplate">
           <span className={`mini-seat-name ${isCoachPick ? 'name-breathe' : ''}`}>{name}{idx === mySeat || interactiveDecks ? ' (you)' : ''}</span>
+          {gamePhase === 'voting' && votes[idx] !== undefined && (
+            <span className="mini-seat-vote-in">Vote is in</span>
+          )}
           <div className="mini-seat-chips" title={`${score} pts`}>
             <ChipStack count={score} />
           </div>
@@ -2907,10 +2916,7 @@ function App() {
           <div className="py-4 scale-in">
             <div className="text-center mb-2 min-h-[2.75rem]">
               {revealAnim === 'ready' ? (
-                <>
-                  <h2 className="text-xl font-black text-yellow-400">Vote for the best card</h2>
-                  <p className="text-zinc-400 text-sm">Tap a card — owners stay hidden</p>
-                </>
+                <h2 className="text-xl font-black text-yellow-400 vote-dialog-title">Vote for the best card</h2>
               ) : (
                 <div className="h-6" aria-hidden />
               )}
@@ -2923,38 +2929,26 @@ function App() {
                 centerShowVote={revealAnim === 'ready'}
               />
             </div>
-            {revealAnim === 'ready' && (
-              <div className="text-center mt-4">
-                <button
-                  onClick={() => { sounds.click(); setGamePhase('voting'); setCurrentPlayer(0); setIsReady(false); }}
-                  className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-2xl btn-press"
-                >
-                  Begin voting rounds →
-                </button>
-              </div>
-            )}
           </div>
         )}
 
         {gamePhase === 'voting' && (
-          <>
-            {!isReady ? (
-              <PassScreen playerIdx={currentPlayer} actionLabel="Vote for the best card (not your own)" />
-            ) : (
-              <div className="py-6 scale-in">
-                <div className="text-center mb-3">
-                  <h2 className="text-2xl font-black text-yellow-400 mb-1">{getName(currentPlayer)} is voting</h2>
-                  <p className="text-zinc-500 text-sm">Anonymous cards • you cannot vote for your own</p>
-                </div>
-                <TableBoard
-                  showPromptText
-                  showCenterPlayed
-                  centerFaceDown={false}
-                  centerShowVote
-                />
-              </div>
-            )}
-          </>
+          <div className="py-4 scale-in">
+            <div className="vote-dialog">
+              <h2 className="vote-dialog-title">Cast your vote</h2>
+              <p className="vote-dialog-sub">
+                <span className="name-breathe" style={{ color: playerHue(currentPlayer) }}>{getName(currentPlayer)}</span>
+                {' '}— choose the best answer
+              </p>
+              <p className="vote-dialog-hint">Tap a card · you can’t vote for your own</p>
+            </div>
+            <TableBoard
+              showPromptText={false}
+              showCenterPlayed
+              centerFaceDown={false}
+              centerShowVote
+            />
+          </div>
         )}
 
         {gamePhase === 'tieNotice' && (

@@ -4086,3 +4086,133 @@ html, body {
     height: 24px;
   }
 }
+
+
+/* ==========================================================================
+   Professional vote flow · desktop no-pan · slower motion · Vote is in
+   ========================================================================== */
+
+/* 1 — Desktop: no panning — table fits the column */
+@media (min-width: 901px) {
+  .table-pan-viewport {
+    overflow: visible;
+    max-height: none;
+    padding: 0;
+  }
+  .felt-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 520px !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* Slower, smoother commit */
+@keyframes commitSpinIn {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.2) rotate(-240deg);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.1) rotate(20deg);
+  }
+  70% {
+    transform: translateY(2px) scale(0.98) rotate(-4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+.mini-seat-played.commit-spin {
+  animation: commitSpinIn 0.95s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Slower center stages */
+@keyframes gatherIn {
+  0% { opacity: 0; transform: scale(0.3) translateY(48px); }
+  100% { opacity: 1; transform: scale(0.85) translateY(0); }
+}
+.felt-played.reveal-gather .felt-played-item {
+  animation: gatherIn 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes centerShuffle {
+  0%, 100% { transform: translateX(0) rotate(0deg) scale(0.85); }
+  25% { transform: translateX(-16px) rotate(-12deg) scale(0.85); }
+  75% { transform: translateX(16px) rotate(12deg) scale(0.85); }
+}
+.felt-played.reveal-shuffle .felt-played-item {
+  animation: centerShuffle 0.75s ease-in-out infinite;
+}
+@keyframes spreadPop {
+  0% { transform: scale(0.45); opacity: 0.5; }
+  60% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.felt-played.reveal-spread .felt-played-item {
+  animation: spreadPop 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.felt-played.reveal-spread .felt-played-item:nth-child(1) { animation-delay: 0.05s; }
+.felt-played.reveal-spread .felt-played-item:nth-child(2) { animation-delay: 0.12s; }
+.felt-played.reveal-spread .felt-played-item:nth-child(3) { animation-delay: 0.19s; }
+.felt-played.reveal-spread .felt-played-item:nth-child(4) { animation-delay: 0.26s; }
+.felt-played.reveal-spread .felt-played-item:nth-child(5) { animation-delay: 0.33s; }
+.felt-played.reveal-spread .felt-played-item:nth-child(6) { animation-delay: 0.4s; }
+
+/* Vote dialogue */
+.vote-dialog {
+  text-align: center;
+  margin: 0 auto 0.85rem;
+  max-width: 24rem;
+  padding: 0.75rem 1rem 0.85rem;
+  border-radius: 16px;
+  background: rgba(9, 9, 11, 0.72);
+  border: 1px solid rgba(234, 179, 8, 0.28);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+.vote-dialog-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #facc15;
+  letter-spacing: 0.02em;
+}
+.vote-dialog-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  color: #e4e4e7;
+  font-weight: 600;
+}
+.vote-dialog-hint {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: #71717a;
+  font-weight: 600;
+}
+
+/* Vote is in */
+.mini-seat-vote-in {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4ade80;
+  margin-top: 1px;
+  animation: voteInFade 0.45s ease both;
+}
+@keyframes voteInFade {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Voting: ensure center cards stay large and tappable */
+.felt-played.reveal-ready .felt-played-item .card-rotator.reveal-size,
+.felt-played.is-reveal .felt-played-item .card-rotator.reveal-size {
+  width: 120px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
+  height: 168px !important;
+}
