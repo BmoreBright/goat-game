@@ -98,22 +98,21 @@ const PLAYER_HUES = ['#eab308', '#38bdf8', '#f472b6', '#a3e635', '#fb923c', '#c0
 
 /** Easy layout knobs — change these instead of hunting magic numbers */
 const layoutConfig = {
-  // Your hand
-  handCardWidth: 118,
-  handCardHeight: 176,
-  handFanSpread: 58,      // px between card centers (desktop fan)
-  handFanRotate: 4.2,     // deg per step from center
+  // Your hand — PTCGP-like scale
+  handCardWidth: 148,
+  handCardHeight: 220,
+  handFanSpread: 72,      // px between card centers (desktop fan)
+  handFanRotate: 5.0,     // deg per step from center
   handBottomPad: 8,
   // Mobile hand
-  mobileHandCardWidth: 108,
-  mobileHandGap: 10,
+  mobileHandCardWidth: 132,
+  mobileHandGap: 12,
   // Center / played cards
-  centerCardWidth: 88,
-  centerCardHeight: 122,
-  // Opponent mini seats
-  miniScale: 0.72,
-  miniDeckWidth: 40,
-  miniDeckHeight: 56,
+  centerCardWidth: 96,
+  centerCardHeight: 134,
+  // Opponent category decks (equal size stacks)
+  miniDeckWidth: 44,
+  miniDeckHeight: 62,
 };
 
 
@@ -746,8 +745,13 @@ function App() {
   const needsPrivacy = ['freeAgency', 'playing', 'voting', 'shorthandedSelect', 'overtimeWriting'].includes(gamePhase);
 
   useEffect(() => {
-    setHoveredCategory(null);
     setHoveredCardUid(null);
+    // Default the hand view to the active prompt category when playing
+    if (gamePhase === 'playing' && currentPrompt?.category) {
+      setHoveredCategory(currentPrompt.category);
+    } else if (gamePhase !== 'playing') {
+      setHoveredCategory(null);
+    }
 
     if (!needsPrivacy) {
       setIsReady(true);
@@ -1551,10 +1555,11 @@ function App() {
     const played = playedCards.find(p => p.playerIndex === idx);
     const isTurn = idx === currentPlayer && ['playing', 'voting', 'shorthandedSelect', 'overtimeWriting', 'overtimeVoting', 'freeAgency'].includes(gamePhase);
     const score = scores[idx] ?? 0;
-    const handCount =
-      (hands[idx]?.player?.length || 0) +
-      (hands[idx]?.team?.length || 0) +
-      (hands[idx]?.moment?.length || 0);
+    const counts = {
+      player: hands[idx]?.player?.length || 0,
+      team: hands[idx]?.team?.length || 0,
+      moment: hands[idx]?.moment?.length || 0,
+    };
     const showFace = played && !(gamePhase === 'playing' || (gamePhase === 'reveal' && !revealPhase));
     return (
       <div
@@ -1567,18 +1572,19 @@ function App() {
           </span>
           <span className="mini-seat-score">{score}</span>
         </div>
-        <div className="mini-seat-body">
-          <div className="table-deck mini-deck-count" title={`${handCount} cards in hand`}>
-            <span>{handCount || '0'}</span>
-          </div>
-          {played ? (
-            <div className="mini-seat-played">
-              <GameCard card={played.card} flipped={!showFace} size="table" disabled />
+        {/* Three category decks — same size as table decks */}
+        <div className="mini-seat-decks">
+          {['player', 'team', 'moment'].map(cat => (
+            <div key={cat} className={`table-deck mini-cat-deck ${cat}`} title={`${cat}: ${counts[cat]}`}>
+              <span className="table-deck-count">{counts[cat]}</span>
             </div>
-          ) : (
-            <div className="table-deck mini-deck-empty" />
-          )}
+          ))}
         </div>
+        {played && (
+          <div className="mini-seat-played">
+            <GameCard card={played.card} flipped={!showFace} size="table" disabled />
+          </div>
+        )}
         {isTurn && <div className="mini-seat-turn-pip" />}
       </div>
     );
@@ -1621,6 +1627,7 @@ function App() {
     const discardCount = (discards.player?.length || 0) + (discards.team?.length || 0) + (discards.moment?.length || 0);
 
     return (
+      <div className="table-pan-viewport">
       <div className="felt-table">
         <div className="felt-engraving" aria-hidden />
 
@@ -1740,6 +1747,7 @@ function App() {
             {getName(selfIdx)}
           </div>
         </div>
+      </div>
       </div>
     );
   };
@@ -2758,7 +2766,7 @@ function App() {
                   </div>
                 )}
 
-                <div className="category-tabs">
+                <div className="category-tabs your-decks">
                   {['player', 'team', 'moment'].map(cat => {
                     const count = hands[currentPlayer]?.[cat]?.length || 0;
                     const isActive = hoveredCategory === cat;
@@ -2766,11 +2774,17 @@ function App() {
                     return (
                       <button
                         key={cat}
-                        className={`category-tab ${isActive ? `active ${cat}` : ''} ${isCorrect ? 'correct' : ''}`}
+                        type="button"
+                        className={`category-tab deck-tab ${isActive ? `active ${cat}` : ''} ${isCorrect ? 'correct' : ''}`}
                         onMouseEnter={() => setHoveredCategory(cat)}
                         onClick={() => setHoveredCategory(cat)}
                       >
-                        {cat} ({count})
+                        <span className={`tab-deck-art ${cat}`} aria-hidden />
+                        <span className="tab-deck-meta">
+                          <span className="tab-deck-name">{cat}</span>
+                          <span className="tab-deck-count">{count}</span>
+                        </span>
+                        {isCorrect && <span className="tab-deck-playable">Play from here</span>}
                       </button>
                     );
                   })}

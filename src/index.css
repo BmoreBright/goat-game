@@ -3419,3 +3419,214 @@ html, body {
   }
   .felt-edge-top { min-height: 76px; }
 }
+
+
+/* ==========================================================================
+   Larger hand (PTCGP scale) + pan viewport + opponent 3-decks
+   ========================================================================== */
+.table-pan-viewport {
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  padding: 0.25rem;
+  margin: 0 auto;
+}
+
+.felt-table {
+  /* Allow table to be larger than viewport so pan is useful */
+  min-width: min(100%, 520px);
+  width: max(100%, 520px);
+  max-width: 640px;
+}
+
+/* Opponent: three equal category decks */
+.mini-seat-decks {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+}
+.mini-cat-deck {
+  width: 36px !important;
+  height: 50px !important;
+  font-size: 0.65rem;
+}
+.mini-cat-deck.player {
+  background: url('/cards/back-player.jpg') center/cover, #1e3a8a;
+  border-color: #3b82f6;
+}
+.mini-cat-deck.team {
+  background: url('/cards/back-team.jpg') center/cover, #065f46;
+  border-color: #10b981;
+}
+.mini-cat-deck.moment {
+  background: url('/cards/back-moment.jpg') center/cover, #5b21b6;
+  border-color: #8b5cf6;
+}
+.felt-table .mini-seat {
+  width: 128px;
+}
+.felt-edge-left,
+.felt-edge-right {
+  width: 136px;
+}
+
+/* Your category decks (tabs) */
+.your-decks.category-tabs {
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.category-tab.deck-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 96px;
+  padding: 0.45rem 0.55rem 0.4rem;
+  border-radius: 14px;
+}
+.tab-deck-art {
+  width: 52px;
+  height: 72px;
+  border-radius: 8px;
+  border: 2px solid #57534e;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+.tab-deck-art.player {
+  background: url('/cards/back-player.jpg') center/cover, #1e3a8a;
+  border-color: #3b82f6;
+}
+.tab-deck-art.team {
+  background: url('/cards/back-team.jpg') center/cover, #065f46;
+  border-color: #10b981;
+}
+.tab-deck-art.moment {
+  background: url('/cards/back-moment.jpg') center/cover, #5b21b6;
+  border-color: #8b5cf6;
+}
+.tab-deck-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+.tab-deck-name {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+.tab-deck-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.tab-deck-playable {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #eab308;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* PTCGP-scale hand cards */
+.card-rotator.hand-size {
+  max-width: 148px;
+}
+.fan-card {
+  width: 148px;
+  height: 220px;
+}
+.card-rotator.hand-size .card-text {
+  font-size: 13px;
+  line-height: 1.35;
+  -webkit-line-clamp: 8;
+}
+.card-rotator.hand-size .card-front {
+  padding: 18% 10% 10% 10%;
+}
+
+.hand-area.player-hand-dock {
+  min-height: 260px;
+  padding-bottom: 1rem;
+}
+.card-fan {
+  height: 260px;
+  max-width: 1100px;
+}
+
+/* Desktop fan restored — do not flatten */
+@media (min-width: 641px) {
+  .card-fan {
+    position: relative;
+    display: block;
+    height: 260px;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0;
+  }
+  .fan-card {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    margin-left: -74px; /* half of 148 */
+    width: 148px;
+    height: 220px;
+  }
+  .fan-card-inner {
+    transition: transform 0.22s cubic-bezier(0.34, 1.45, 0.64, 1);
+    transform-origin: bottom center;
+  }
+  .fan-card:hover .fan-card-inner,
+  .fan-card.playable:hover .fan-card-inner {
+    transform: translateY(-36px) scale(1.08);
+  }
+}
+
+@media (max-width: 640px) {
+  .felt-table {
+    width: 560px;
+    min-width: 560px;
+    max-width: 560px;
+  }
+  .table-pan-viewport {
+    max-height: 58vh;
+  }
+  .felt-table .mini-seat {
+    width: 118px;
+  }
+  .felt-edge-left,
+  .felt-edge-right {
+    width: 124px;
+  }
+  /* Mobile: large horizontal scroll hand */
+  .fan-card {
+    width: 132px;
+    height: 196px;
+    position: relative !important;
+    left: auto !important;
+    margin-left: 0 !important;
+    transform: none !important;
+  }
+  .card-rotator.hand-size {
+    max-width: 132px;
+  }
+  .card-fan {
+    display: flex;
+    height: auto;
+    min-height: 210px;
+    width: max-content;
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  .hand-area {
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+  .category-tab.deck-tab {
+    min-width: 84px;
+  }
+}
