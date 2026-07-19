@@ -3138,3 +3138,284 @@ html, body {
     flex-wrap: wrap;
   }
 }
+
+
+/* ==========================================================================
+   Square transparent felt table (sketch layout)
+   ========================================================================== */
+.felt-table {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1.05;
+  max-height: min(72vh, 560px);
+  border-radius: 18px;
+  border: 10px solid rgba(41, 37, 36, 0.75);
+  background:
+    radial-gradient(ellipse at center, rgba(22, 101, 52, 0.55) 0%, rgba(20, 83, 45, 0.42) 45%, rgba(5, 46, 22, 0.38) 100%);
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.35),
+    0 16px 40px -12px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  backdrop-filter: blur(2px);
+}
+
+.felt-engraving {
+  position: absolute;
+  inset: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 38%, rgba(255,255,255,0.04) 39%, transparent 42%),
+    linear-gradient(90deg, transparent 49%, rgba(255,255,255,0.05) 49%, rgba(255,255,255,0.05) 51%, transparent 51%);
+}
+
+.felt-edge {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem;
+}
+.felt-edge-top { min-height: 88px; flex-shrink: 0; }
+.felt-edge-bottom {
+  min-height: 36px;
+  flex-shrink: 0;
+}
+.felt-you-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+}
+
+.felt-middle-row {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  z-index: 2;
+}
+.felt-edge-left,
+.felt-edge-right {
+  width: 96px;
+  flex-shrink: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.25rem;
+}
+
+.felt-center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  padding: 0.25rem 0.35rem;
+  overflow-y: auto;
+}
+
+/* Equal-size decks everywhere on the table */
+.table-deck {
+  width: 52px;
+  height: 72px;
+  border-radius: 8px;
+  border: 2px solid #57534e;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  background: #1c1917;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.table-deck-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+.table-deck-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(245, 245, 240, 0.55);
+}
+.table-deck-label.player { color: #93c5fd; }
+.table-deck-label.team { color: #6ee7b7; }
+.table-deck-label.moment { color: #c4b5fd; }
+.table-deck-count {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.supply-draw {
+  background: url('/cards/back-draw.jpg') center/cover, #1c1917;
+  border-color: #a16207;
+}
+.supply-discard {
+  background: linear-gradient(160deg, #44403c, #292524);
+  border-color: #78716c;
+}
+.supply-discard.empty {
+  background: transparent;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+}
+
+.prompt-player { background: url('/cards/prompt-player.jpg') center/cover, #1e3a8a; border-color: #3b82f6; }
+.prompt-team { background: url('/cards/prompt-team.jpg') center/cover, #065f46; border-color: #10b981; }
+.prompt-moment { background: url('/cards/prompt-moment.jpg') center/cover, #5b21b6; border-color: #8b5cf6; }
+
+.felt-supply {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+.felt-prompts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+.felt-prompts-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+.felt-prompts-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.prompt-deck-btn.clickable {
+  cursor: pointer;
+}
+.prompt-deck-btn.clickable:hover .table-deck {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+.prompt-deck-btn.active .table-deck {
+  box-shadow: 0 0 0 2px #eab308, 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* Played / revealed cards */
+.felt-played {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.35rem 0;
+}
+.felt-played-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.felt-played.is-reveal .felt-played-item .card-rotator.reveal-size {
+  /* ~25% larger than base reveal for readability when voting */
+  width: 110px !important;
+  min-width: 110px !important;
+  max-width: 110px !important;
+  height: 154px !important;
+}
+.felt-played-item.can-vote {
+  cursor: pointer;
+}
+.felt-played-item.can-vote:hover,
+.felt-played-item.can-vote:focus-within {
+  transform: translateY(-10px) scale(1.06);
+  z-index: 5;
+}
+.felt-played-item.can-vote:hover .card,
+.felt-played-item.can-vote:focus-within .card {
+  box-shadow: 0 0 0 3px #eab308, 0 12px 24px rgba(234, 179, 8, 0.28);
+}
+.felt-played-item.is-own {
+  opacity: 0.45;
+  filter: grayscale(0.35);
+  pointer-events: none;
+}
+.card.vote-target {
+  cursor: pointer;
+}
+
+/* Mini seats on felt */
+.felt-table .mini-seat {
+  width: 86px;
+  background: rgba(9, 9, 11, 0.72);
+  border-color: rgba(63, 63, 70, 0.75);
+}
+.felt-table .mini-seat-deck,
+.felt-table .table-deck.mini-deck-count {
+  width: 40px;
+  height: 56px;
+  font-size: 0.7rem;
+}
+.felt-table .mini-deck-empty {
+  width: 40px;
+  height: 56px;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: none;
+}
+.felt-table .mini-seat-played .card-rotator.table-size {
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 56px !important;
+}
+
+@media (max-width: 640px) {
+  .felt-table {
+    max-width: 100%;
+    max-height: min(68vh, 480px);
+    border-width: 7px;
+    border-radius: 14px;
+    aspect-ratio: 1 / 1.12;
+  }
+  .felt-edge-left,
+  .felt-edge-right {
+    width: 78px;
+  }
+  .felt-table .mini-seat {
+    width: 72px;
+    padding: 0.25rem;
+  }
+  .table-deck {
+    width: 44px;
+    height: 62px;
+  }
+  .felt-played.is-reveal .felt-played-item .card-rotator.reveal-size {
+    width: 92px !important;
+    min-width: 92px !important;
+    max-width: 92px !important;
+    height: 128px !important;
+  }
+  .felt-edge-top { min-height: 76px; }
+}
