@@ -2971,3 +2971,170 @@ html, body {
     height: 100px !important;
   }
 }
+
+
+/* ==========================================================================
+   PTCGP-inspired arena layout
+   Hierarchy: opponents (small) → center stage → your hand (dock)
+   ========================================================================== */
+.game-arena {
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+  padding: 0.35rem 0.5rem 0.25rem;
+}
+
+/* ----- Opponent / other-player strip ----- */
+.opponents-row {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0.45rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.25rem 0.15rem 0.35rem;
+  scrollbar-width: none;
+}
+.opponents-row::-webkit-scrollbar { display: none; }
+
+.mini-seat {
+  position: relative;
+  flex: 0 0 auto;
+  width: 92px;
+  padding: 0.35rem 0.4rem 0.4rem;
+  border-radius: 12px;
+  background: rgba(24, 24, 27, 0.92);
+  border: 1px solid rgba(63, 63, 70, 0.85);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.mini-seat.is-turn {
+  border-color: var(--seat-hue, #eab308);
+  box-shadow: 0 0 0 1px var(--seat-hue, #eab308), 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+.mini-seat.is-me {
+  opacity: 0.55;
+}
+.mini-seat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  margin-bottom: 0.3rem;
+}
+.mini-seat-name {
+  font-size: 0.68rem;
+  font-weight: 800;
+  max-width: 58px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mini-seat-score {
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: #facc15;
+  tabular-nums: true;
+}
+.mini-seat-body {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 58px;
+}
+.mini-seat-deck {
+  width: 36px;
+  height: 50px;
+  border-radius: 6px;
+  background: linear-gradient(160deg, #292524, #1c1917);
+  border: 1.5px solid #a16207;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+.mini-seat-slot {
+  width: 40px;
+  height: 56px;
+  border-radius: 6px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.15);
+}
+.mini-seat-played .card-rotator.table-size {
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 56px !important;
+}
+.mini-seat-turn-pip {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--seat-hue, #eab308);
+  box-shadow: 0 0 8px var(--seat-hue, #eab308);
+}
+
+/* ----- Center stage ----- */
+.center-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem 0.65rem;
+  border-radius: 16px;
+  background: rgba(9, 9, 11, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Hand dock — visual separation like PTCGP bottom zone */
+.player-hand-dock {
+  margin-top: 0.15rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 640px) {
+  .game-arena {
+    gap: 0.45rem;
+    padding: 0.2rem 0.35rem;
+  }
+  .mini-seat {
+    width: 84px;
+    padding: 0.3rem 0.3rem 0.35rem;
+  }
+  .mini-seat-name {
+    max-width: 50px;
+    font-size: 0.62rem;
+  }
+  .opponents-row {
+    gap: 0.35rem;
+    justify-content: flex-start;
+    padding-left: 0.15rem;
+  }
+  .center-stage {
+    padding: 0.45rem 0.5rem 0.55rem;
+    border-radius: 14px;
+  }
+}
+
+/* Desktop: slightly roomier mini seats */
+@media (min-width: 641px) {
+  .mini-seat {
+    width: 100px;
+  }
+  .opponents-row {
+    flex-wrap: wrap;
+  }
+}

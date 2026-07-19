@@ -96,6 +96,27 @@ const OnlineSelfReady = ({ onReady }) => {
 
 const PLAYER_HUES = ['#eab308', '#38bdf8', '#f472b6', '#a3e635', '#fb923c', '#c084fc', '#2dd4bf', '#f87171'];
 
+/** Easy layout knobs — change these instead of hunting magic numbers */
+const layoutConfig = {
+  // Your hand
+  handCardWidth: 118,
+  handCardHeight: 176,
+  handFanSpread: 58,      // px between card centers (desktop fan)
+  handFanRotate: 4.2,     // deg per step from center
+  handBottomPad: 8,
+  // Mobile hand
+  mobileHandCardWidth: 108,
+  mobileHandGap: 10,
+  // Center / played cards
+  centerCardWidth: 88,
+  centerCardHeight: 122,
+  // Opponent mini seats
+  miniScale: 0.72,
+  miniDeckWidth: 40,
+  miniDeckHeight: 56,
+};
+
+
 
 const GameCard = ({
   card,
@@ -1525,6 +1546,45 @@ function App() {
 
   // ========== TABLE ==========
 
+  const MiniPlayerSeat = ({ idx }) => {
+    const name = getName(idx);
+    const played = playedCards.find(p => p.playerIndex === idx);
+    const isTurn = idx === currentPlayer && ['playing', 'voting', 'shorthandedSelect', 'overtimeWriting', 'overtimeVoting', 'freeAgency'].includes(gamePhase);
+    const score = scores[idx] ?? 0;
+    const handCount = (hands[idx]?.player?.length || 0) + (hands[idx]?.team?.length || 0) + (hands[idx]?.moment?.length || 0);
+    return (
+      <div
+        className={`mini-seat ${isTurn ? 'is-turn' : ''} ${idx === mySeat ? 'is-me' : ''}`}
+        style={{ '--seat-hue': playerHue(idx) }}
+      >
+        <div className="mini-seat-top">
+          <span className="mini-seat-name" style={{ color: playerHue(idx) }}>
+            {name}{idx === mySeat ? ' (you)' : ''}
+          </span>
+          <span className="mini-seat-score">{score}</span>
+        </div>
+        <div className="mini-seat-body">
+          <div className="mini-seat-deck" title={`${handCount} cards`}>
+            <span>{handCount || '—'}</span>
+          </div>
+          {played ? (
+            <div className="mini-seat-played">
+              <GameCard
+                card={played.card}
+                flipped={gamePhase === 'playing' || gamePhase === 'reveal' && !revealPhase}
+                size="table"
+                disabled
+              />
+            </div>
+          ) : (
+            <div className="mini-seat-slot" />
+          )}
+        </div>
+        {isTurn && <div className="mini-seat-turn-pip" />}
+      </div>
+    );
+  };
+
   const TableBoard = ({
     decksClickable = false,
     showPromptText = true,
@@ -1533,99 +1593,94 @@ function App() {
     centerFaceDown = true,
     centerShowVote = false,
     centerShowResults = false
-  }) => (
-    <div className="game-stage">
-      {/* Category picker */}
-      {(decksClickable || showPromptText) && (
-        <div className="stage-categories">
-          {['player', 'team', 'moment'].map(cat => (
-            <button
-              key={cat}
-              type="button"
-              className={`stage-cat-btn ${cat} ${currentPrompt?.category === cat ? 'active' : ''} ${decksClickable ? 'clickable' : ''}`}
-              onClick={() => decksClickable && chooseCategory(cat)}
-              disabled={!decksClickable}
-            >
-              <span className="stage-cat-name">{cat}</span>
-              {decksClickable && <span className="stage-cat-hint">Tap to play</span>}
-            </button>
-          ))}
-        </div>
-      )}
+  }) => {
+    const opponentIdxs = Array.from({ length: playerCount }, (_, i) => i).filter(i => !isOnline || i !== mySeat);
+    // In local mode show everyone in the strip; in online hide self (hand is below)
+    const stripIdxs = isOnline ? opponentIdxs : Array.from({ length: playerCount }, (_, i) => i);
 
-      {/* Prompt */}
-      {showPromptText && currentPrompt && (
-        <div className={`stage-prompt cat-${currentPrompt.category}`}>
-          <span className="stage-prompt-badge">{currentPrompt.category}</span>
-          <p className="stage-prompt-text">{currentPrompt.text}</p>
-        </div>
-      )}
+    return (
+      <div className="game-arena">
+        {/* Opponents / other players */}
+        {stripIdxs.length > 0 && (
+          <div className="opponents-row">
+            {stripIdxs.map(i => (
+              <MiniPlayerSeat key={i} idx={i} />
+            ))}
+          </div>
+        )}
 
-      {/* Compact supply counts */}
-      <div className="stage-supply">
-        <span>Draw {(decks.player?.length || 0) + (decks.team?.length || 0) + (decks.moment?.length || 0)}</span>
-        <span className="stage-supply-dot">·</span>
-        <span>Discard {(discards.player?.length || 0) + (discards.team?.length || 0) + (discards.moment?.length || 0)}</span>
-      </div>
+        {/* Center stage */}
+        <div className="center-stage">
+          {(decksClickable || (showPromptText && !currentPrompt)) && (
+            <div className="stage-categories">
+              {['player', 'team', 'moment'].map(cat => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`stage-cat-btn ${cat} ${currentPrompt?.category === cat ? 'active' : ''} ${decksClickable ? 'clickable' : ''}`}
+                  onClick={() => decksClickable && chooseCategory(cat)}
+                  disabled={!decksClickable}
+                >
+                  <span className="stage-cat-name">{cat}</span>
+                  {decksClickable && <span className="stage-cat-hint">Tap to play</span>}
+                </button>
+              ))}
+            </div>
+          )}
 
-      {/* Played cards */}
-      {showCenterPlayed && playedCards.length > 0 && (
-        <div className="stage-played">
-          {centerOrder.map((origIdx, i) => {
-            const p = playedCards[origIdx];
-            const isOwn = centerShowVote && p.playerIndex === currentPlayer;
-            const voteCount = centerShowResults ? (tally[origIdx] || 0) : 0;
-            const isWinner = centerShowResults && origIdx === winnerIndex;
-            const faceDown = centerFaceDown
-              ? true
-              : (isRevealing ? i >= revealStep : false);
-            return (
-              <div key={p.card.uid} className={`stage-played-item ${isWinner ? 'winner-pulse' : ''}`}>
-                <GameCard
-                  card={p.card}
-                  flipped={faceDown}
-                  size="reveal"
-                  showOwner={centerShowResults || (!faceDown && !centerShowVote)}
-                  ownerName={getName(p.playerIndex)}
-                  disabled={centerShowVote && isOwn}
-                />
-                {centerShowVote && !isOwn && (
-                  <button
-                    type="button"
-                    className="stage-vote-btn"
-                    onClick={() => castVote(origIdx)}
-                  >
-                    Vote
-                  </button>
-                )}
-                {centerShowResults && (
-                  <div className="stage-vote-count">
-                    {voteCount} vote{voteCount !== 1 ? 's' : ''}
-                    {isWinner && <span className="text-yellow-400 font-black"> WIN</span>}
+          {showPromptText && currentPrompt && (
+            <div className={`stage-prompt cat-${currentPrompt.category}`}>
+              <span className="stage-prompt-badge">{currentPrompt.category}</span>
+              <p className="stage-prompt-text">{currentPrompt.text}</p>
+            </div>
+          )}
+
+          <div className="stage-supply">
+            <span>Draw {(decks.player?.length || 0) + (decks.team?.length || 0) + (decks.moment?.length || 0)}</span>
+            <span className="stage-supply-dot">·</span>
+            <span>Discard {(discards.player?.length || 0) + (discards.team?.length || 0) + (discards.moment?.length || 0)}</span>
+          </div>
+
+          {showCenterPlayed && playedCards.length > 0 && (
+            <div className="stage-played">
+              {centerOrder.map((origIdx, i) => {
+                const p = playedCards[origIdx];
+                const isOwn = centerShowVote && p.playerIndex === currentPlayer;
+                const voteCount = centerShowResults ? (tally[origIdx] || 0) : 0;
+                const isWinner = centerShowResults && origIdx === winnerIndex;
+                const faceDown = centerFaceDown
+                  ? true
+                  : (isRevealing ? i >= revealStep : false);
+                return (
+                  <div key={p.card.uid} className={`stage-played-item ${isWinner ? 'winner-pulse' : ''}`}>
+                    <GameCard
+                      card={p.card}
+                      flipped={faceDown}
+                      size="reveal"
+                      showOwner={centerShowResults || (!faceDown && !centerShowVote)}
+                      ownerName={getName(p.playerIndex)}
+                      disabled={centerShowVote && isOwn}
+                    />
+                    {centerShowVote && !isOwn && (
+                      <button type="button" className="stage-vote-btn" onClick={() => castVote(origIdx)}>
+                        Vote
+                      </button>
+                    )}
+                    {centerShowResults && (
+                      <div className="stage-vote-count">
+                        {voteCount} vote{voteCount !== 1 ? 's' : ''}
+                        {isWinner && <span className="text-yellow-400 font-black"> WIN</span>}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Optional: whose card is sitting out during play */}
-      {showSeatPlayed && (
-        <div className="stage-seats-strip">
-          {Array.from({ length: playerCount }).map((_, i) => {
-            const played = playedCards.find(p => p.playerIndex === i);
-            return (
-              <div key={i} className="stage-seat-chip" style={{ borderColor: playerHue(i) }}>
-                <span style={{ color: playerHue(i) }}>{getName(i)}</span>
-                <span className="text-zinc-500 text-xs">{played ? 'In' : '…'}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   const PassScreen = ({ playerIdx, actionLabel }) => {
     // ---------- ONLINE ----------
@@ -2659,15 +2714,15 @@ function App() {
                   })}
                 </div>
 
-                <div className="hand-area">
+                <div className="hand-area player-hand-dock">
                   {hoveredCategory && hands[currentPlayer]?.[hoveredCategory] ? (
                     <div className="card-fan">
                       {hands[currentPlayer][hoveredCategory].map((card, idx, arr) => {
                         const total = arr.length;
                         const mid = (total - 1) / 2;
                         const offset = idx - mid;
-                        const rotate = offset * 4.5;
-                        const translateX = offset * 62;
+                        const rotate = offset * layoutConfig.handFanRotate;
+                        const translateX = offset * layoutConfig.handFanSpread;
                         const isInjured = card.injury > 0;
                         const isBenched = (benched[currentPlayer] || []).find(b => b.uid === card.uid);
                         const canPlay = hoveredCategory === currentPrompt.category && !isInjured && !isBenched;
@@ -2697,7 +2752,7 @@ function App() {
                       })}
                     </div>
                   ) : (
-                    <p className="text-zinc-600 text-sm">Hover a category above to see your cards</p>
+                    <p className="text-zinc-600 text-sm">Tap a category above to see your cards</p>
                   )}
                 </div>
               </div>
