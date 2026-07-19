@@ -1633,45 +1633,61 @@ function App() {
     const name = getName(idx);
     const played = playedCards.find(p => p.playerIndex === idx);
     const isCoachPick = gamePhase === 'category' && idx === currentCoach;
-    const isTurn = isCoachPick || (idx === currentPlayer && ['playing', 'voting', 'shorthandedSelect', 'overtimeWriting', 'overtimeVoting', 'freeAgency'].includes(gamePhase));
+    const isTurn =
+      isCoachPick ||
+      (idx === currentPlayer &&
+        ['playing', 'voting', 'shorthandedSelect', 'overtimeWriting', 'overtimeVoting', 'freeAgency'].includes(gamePhase));
     const score = scores[idx] ?? 0;
     const counts = {
       player: hands[idx]?.player?.length || 0,
       team: hands[idx]?.team?.length || 0,
       moment: hands[idx]?.moment?.length || 0,
     };
-    const showFace = played && !(gamePhase === 'playing' || (gamePhase === 'reveal' && !revealPhase));
+    const showCommit = played && gamePhase === 'playing';
     return (
       <div
-        className={`mini-seat side-${side} ${isTurn ? 'is-turn' : ''} ${isCoachPick ? 'is-coach-pick' : ''} ${idx === mySeat ? 'is-me' : ''} ${interactiveDecks ? 'is-self-seat' : ''}`}
-        style={{ '--seat-hue': playerHue(idx) }}
+        className={[
+          'ms',
+          `ms-${side}`,
+          isTurn ? 'ms-turn' : '',
+          isCoachPick ? 'ms-coach' : '',
+          interactiveDecks ? 'ms-self' : '',
+        ].filter(Boolean).join(' ')}
+        style={{ '--hue': playerHue(idx) }}
       >
-        <div className="mini-seat-nameplate">
-          <span className={`mini-seat-name ${isCoachPick ? 'name-breathe' : ''}`}>{name}{idx === mySeat || interactiveDecks ? ' (you)' : ''}</span>
+        <div className="ms-id">
+          <span className={`ms-name ${isCoachPick ? 'name-breathe' : ''}`}>
+            {name}{interactiveDecks ? ' (you)' : ''}
+          </span>
           {gamePhase === 'voting' && votes[idx] !== undefined && (
-            <span className="mini-seat-vote-in">Vote is in</span>
+            <span className="ms-vote-in">Vote is in</span>
           )}
-          <div className="mini-seat-chips" title={`${score} pts`}>
+          <div className="ms-chips" title={`${score} pts`}>
             <ChipStack count={score} />
           </div>
         </div>
-        <div className="mini-seat-decks">
+        <div className="ms-decks">
           {['player', 'team', 'moment'].map(cat => (
             <button
               key={cat}
               type="button"
-              className={`table-deck mini-cat-deck ${cat} ${interactiveDecks && hoveredCategory === cat ? 'is-selected' : ''} ${interactiveDecks ? 'is-interactive' : ''}`}
-              title={`${cat}: ${counts[cat]}`}
+              className={[
+                'ms-deck',
+                cat,
+                interactiveDecks ? 'ms-deck-live' : '',
+                interactiveDecks && hoveredCategory === cat ? 'ms-deck-on' : '',
+              ].filter(Boolean).join(' ')}
               disabled={!interactiveDecks}
+              title={`${cat}: ${counts[cat]}`}
               onClick={() => interactiveDecks && setHoveredCategory(cat)}
               onMouseEnter={() => interactiveDecks && setHoveredCategory(cat)}
             >
-              <span className="table-deck-count">{counts[cat]}</span>
+              <span>{counts[cat]}</span>
             </button>
           ))}
         </div>
-        {played && gamePhase === 'playing' && (
-          <div className={`mini-seat-played toward-center ${justPlayedUid === played.card.uid ? 'commit-spin' : 'commit-rest'}`}>
+        {showCommit && (
+          <div className={`ms-commit ${justPlayedUid === played.card.uid ? 'ms-commit-in' : ''}`}>
             <GameCard card={played.card} flipped size="table" disabled />
           </div>
         )}
@@ -1682,25 +1698,20 @@ function App() {
   const TableBoard = ({
     decksClickable = false,
     showPromptText = true,
-    showSeatPlayed = false,
     showCenterPlayed = false,
     centerFaceDown = true,
     centerShowVote = false,
     centerShowResults = false,
     showPromptArrow = false,
   }) => {
-    // Seat map: you at bottom; others around the square table
-    const others = Array.from({ length: playerCount }, (_, i) => i).filter(i => i !== (isOnline ? mySeat : -1));
-    // Local mode: treat seat 0 as "you" visually at bottom for consistency when online mySeat is used
     const selfIdx = isOnline && mySeat != null ? mySeat : 0;
     const opp = Array.from({ length: playerCount }, (_, i) => i).filter(i => i !== selfIdx);
 
     let topIdxs = [];
     let leftIdxs = [];
     let rightIdxs = [];
-    if (opp.length === 1) {
-      topIdxs = [opp[0]];
-    } else if (opp.length === 2) {
+    if (opp.length === 1) topIdxs = [opp[0]];
+    else if (opp.length === 2) {
       leftIdxs = [opp[0]];
       rightIdxs = [opp[1]];
     } else if (opp.length === 3) {
@@ -1713,146 +1724,129 @@ function App() {
       rightIdxs = opp.slice(leftIdxs.length + topIdxs.length);
     }
 
-    const drawCount = (decks.player?.length || 0) + (decks.team?.length || 0) + (decks.moment?.length || 0);
-    const discardCount = (discards.player?.length || 0) + (discards.team?.length || 0) + (discards.moment?.length || 0);
+    const drawCount =
+      (decks.player?.length || 0) + (decks.team?.length || 0) + (decks.moment?.length || 0);
+    const discardCount =
+      (discards.player?.length || 0) + (discards.team?.length || 0) + (discards.moment?.length || 0);
 
     return (
-      <div className="table-pan-viewport">
-      <div className="felt-table">
-        <div className="felt-engraving" aria-hidden />
+      <div className="live-table-scroll">
+        <div className="live-table">
+          <div className="live-table-felt" aria-hidden />
 
-        {/* Top opponents */}
-        <div className="felt-edge felt-edge-top">
-          {topIdxs.map(i => <MiniPlayerSeat key={i} idx={i} side="top" />)}
-        </div>
-
-        <div className="felt-middle-row">
-          {/* Left opponents */}
-          <div className="felt-edge felt-edge-left">
-            {leftIdxs.map(i => <MiniPlayerSeat key={i} idx={i} side="left" />)}
+          <div className="lt-top">
+            {topIdxs.map(i => (
+              <MiniPlayerSeat key={i} idx={i} side="top" />
+            ))}
           </div>
 
-          {/* Center column */}
-          <div className="felt-center">
-            {/* Draw + Discard above prompts */}
-            <div className="felt-supply">
-              <div className="table-deck-wrap">
-                <div className="table-deck supply-draw">
-                  <span className="table-deck-count">{drawCount}</span>
-                </div>
-                <span className="table-deck-label">Draw</span>
-              </div>
-              <div className="table-deck-wrap">
-                <div className={`table-deck supply-discard ${discardCount ? 'has-cards' : 'empty'}`}>
-                  <span className="table-deck-count">{discardCount || ''}</span>
-                </div>
-                <span className="table-deck-label">Discard</span>
-              </div>
+          <div className="lt-mid">
+            <div className="lt-side lt-left">
+              {leftIdxs.map(i => (
+                <MiniPlayerSeat key={i} idx={i} side="left" />
+              ))}
             </div>
 
-            {/* Prompt decks — equal size */}
-            <div className="felt-prompts">
-              {showPromptArrow && (
-                <div className="prompt-arrow-inline" aria-hidden>
-                  <svg viewBox="0 0 80 36" className="prompt-arrow-svg">
-                    <defs>
-                      <filter id="aglowf2" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="1.6" result="b" />
-                        <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-                      </filter>
-                    </defs>
-                    <path d="M12 6 Q40 32 68 6" fill="none" stroke="#facc15" strokeWidth="3" strokeLinecap="round" filter="url(#aglowf2)" className="prompt-arrow-path" />
-                    <path d="M60 5 L70 6 L62 14" fill="none" stroke="#facc15" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#aglowf2)" />
-                  </svg>
+            <div className="lt-center">
+              <div className="lt-supply">
+                <div className="lt-pile">
+                  <div className="lt-deck lt-draw"><span>{drawCount}</span></div>
+                  <span className="lt-cap">Draw</span>
+                </div>
+                <div className="lt-pile">
+                  <div className={`lt-deck lt-discard ${discardCount ? '' : 'empty'}`}>
+                    <span>{discardCount || ''}</span>
+                  </div>
+                  <span className="lt-cap">Discard</span>
+                </div>
+              </div>
+
+              <div className="lt-prompts">
+                {showPromptArrow && (
+                  <div className="lt-arrow" aria-hidden>
+                    <svg viewBox="0 0 72 28">
+                      <path d="M10 5 Q36 26 62 5" fill="none" stroke="#facc15" strokeWidth="3" strokeLinecap="round" />
+                      <path d="M54 4 L64 5 L56 13" fill="none" stroke="#facc15" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                )}
+                <div className="lt-prompts-label">Prompt cards</div>
+                <div className="lt-prompts-row">
+                  {['moment', 'player', 'team'].map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      className={`lt-pile lt-prompt ${cat} ${decksClickable ? 'live' : ''} ${currentPrompt?.category === cat ? 'on' : ''}`}
+                      disabled={!decksClickable}
+                      onClick={() => decksClickable && chooseCategory(cat)}
+                    >
+                      <div className={`lt-deck prompt-${cat}`} />
+                      <span className={`lt-cap ${cat}`}>{cat}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {showPromptText && currentPrompt && (
+                <div className={`lt-prompt-banner cat-${currentPrompt.category}`}>
+                  <span>{currentPrompt.category}</span>
+                  <p>{currentPrompt.text}</p>
                 </div>
               )}
-              <div className="felt-prompts-label">Prompt cards</div>
-              <div className="felt-prompts-row">
-                {['moment', 'player', 'team'].map(cat => (
-                  <button
-                    key={cat}
-                    type="button"
-                    className={`table-deck-wrap prompt-deck-btn ${cat} ${decksClickable ? 'clickable' : ''} ${currentPrompt?.category === cat ? 'active' : ''}`}
-                    onClick={() => decksClickable && chooseCategory(cat)}
-                    disabled={!decksClickable}
-                  >
-                    <div className={`table-deck prompt-${cat}`} />
-                    <span className={`table-deck-label ${cat}`}>{cat}</span>
-                  </button>
-                ))}
-              </div>
+
+              {showCenterPlayed && playedCards.length > 0 && (
+                <div className={`lt-played reveal-${revealAnim || 'ready'} ${(centerShowVote || centerShowResults || revealPhase || ['spread','flipping','ready'].includes(revealAnim)) ? 'big' : ''}`}>
+                  {centerOrder.map((origIdx, i) => {
+                    const p = playedCards[origIdx];
+                    const isOwn = centerShowVote && p.playerIndex === currentPlayer;
+                    const voteCount = centerShowResults ? (tally[origIdx] || 0) : 0;
+                    const isWinner = centerShowResults && origIdx === winnerIndex;
+                    let faceDown = true;
+                    if (centerShowResults || revealAnim === 'ready' || gamePhase === 'voting') faceDown = false;
+                    else if (revealAnim === 'flipping') faceDown = i >= revealStep;
+                    else if (['gather', 'shuffle', 'spread'].includes(revealAnim)) faceDown = true;
+                    else faceDown = !!centerFaceDown;
+                    const canVote = centerShowVote && !isOwn && !faceDown;
+                    return (
+                      <div
+                        key={p.card.uid}
+                        className={`lt-played-item ${isWinner ? 'winner-pulse' : ''} ${canVote ? 'can-vote' : ''} ${isOwn ? 'is-own' : ''}`}
+                        onClick={() => canVote && castVote(origIdx)}
+                        role={canVote ? 'button' : undefined}
+                        tabIndex={canVote ? 0 : undefined}
+                      >
+                        <GameCard
+                          card={p.card}
+                          flipped={faceDown}
+                          size={['spread', 'flipping', 'ready'].includes(revealAnim) || gamePhase === 'voting' || centerShowResults ? 'reveal' : 'table'}
+                          showOwner={!!centerShowResults}
+                          ownerName={centerShowResults ? getName(p.playerIndex) : undefined}
+                          disabled={!canVote}
+                        />
+                        {centerShowResults && (
+                          <div className="stage-vote-count">
+                            {voteCount} vote{voteCount !== 1 ? 's' : ''}
+                            {isWinner && <span className="text-yellow-400 font-black"> WIN</span>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* Current prompt text */}
-            {showPromptText && currentPrompt && (
-              <div className={`stage-prompt cat-${currentPrompt.category}`}>
-                <span className="stage-prompt-badge">{currentPrompt.category}</span>
-                <p className="stage-prompt-text">{currentPrompt.text}</p>
-              </div>
-            )}
-
-            {/* Revealed / played cards (vote by clicking card) */}
-            {showCenterPlayed && playedCards.length > 0 && (
-              <div className={`felt-played ${centerShowVote || centerShowResults || revealPhase || revealAnim === 'spread' || revealAnim === 'flipping' || revealAnim === 'ready' ? 'is-reveal' : ''} reveal-${revealAnim}`}>
-                {centerOrder.map((origIdx, i) => {
-                  const p = playedCards[origIdx];
-                  const isOwn = centerShowVote && p.playerIndex === currentPlayer;
-                  const voteCount = centerShowResults ? (tally[origIdx] || 0) : 0;
-                  const isWinner = centerShowResults && origIdx === winnerIndex;
-                  // Face-down until flipped in sequence; stay anonymous until results
-                  let faceDown = true;
-                  if (centerShowResults || revealAnim === 'ready') faceDown = false;
-                  else if (revealAnim === 'flipping') faceDown = i >= revealStep;
-                  else if (revealAnim === 'spread' || revealAnim === 'shuffle' || revealAnim === 'gather') faceDown = true;
-                  else faceDown = !!centerFaceDown;
-                  const canVote = centerShowVote && !isOwn && !faceDown;
-                  return (
-                    <div
-                      key={p.card.uid}
-                      className={`felt-played-item ${isWinner ? 'winner-pulse' : ''} ${canVote ? 'can-vote' : ''} ${isOwn ? 'is-own' : ''}`}
-                      onClick={() => canVote && castVote(origIdx)}
-                      onKeyDown={(e) => {
-                        if (canVote && (e.key === 'Enter' || e.key === ' ')) {
-                          e.preventDefault();
-                          castVote(origIdx);
-                        }
-                      }}
-                      role={canVote ? 'button' : undefined}
-                      tabIndex={canVote ? 0 : undefined}
-                    >
-                      <GameCard
-                        card={p.card}
-                        flipped={faceDown}
-                        size={(revealAnim === 'spread' || revealAnim === 'flipping' || revealAnim === 'ready' || centerShowResults) ? 'reveal' : 'table'}
-                        showOwner={!!centerShowResults}
-                        ownerName={centerShowResults ? getName(p.playerIndex) : undefined}
-                        disabled={!canVote}
-                        className={canVote ? 'vote-target' : ''}
-                      />
-                      {centerShowResults && (
-                        <div className="stage-vote-count">
-                          {voteCount} vote{voteCount !== 1 ? 's' : ''}
-                          {isWinner && <span className="text-yellow-400 font-black"> WIN</span>}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <div className="lt-side lt-right">
+              {rightIdxs.map(i => (
+                <MiniPlayerSeat key={i} idx={i} side="right" />
+              ))}
+            </div>
           </div>
 
-          {/* Right opponents */}
-          <div className="felt-edge felt-edge-right">
-            {rightIdxs.map(i => <MiniPlayerSeat key={i} idx={i} side="right" />)}
+          <div className="lt-bottom">
+            <MiniPlayerSeat idx={selfIdx} side="bottom" interactiveDecks />
           </div>
         </div>
-
-        {/* You — label only; hand is rendered below by phase UI */}
-        <div className="felt-edge felt-edge-bottom">
-          <MiniPlayerSeat idx={selfIdx} side="bottom" interactiveDecks />
-        </div>
-      </div>
       </div>
     );
   };
