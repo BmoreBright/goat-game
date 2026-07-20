@@ -4616,3 +4616,377 @@ html, body {
 .lt-deck span {
   text-shadow: 0 1px 2px rgba(0,0,0,0.85);
 }
+
+
+/* ==========================================================================
+   Vote/reveal cards: centered overlay over prompts, grid by count, no clip
+   ========================================================================== */
+
+/* Allow tall reveal cards to extend without being sliced */
+.live-table {
+  overflow: visible !important;
+}
+.lt-center {
+  overflow: visible !important;
+  position: relative;
+}
+.lt-mid {
+  overflow: visible;
+}
+
+/* When big (reveal / vote): overlay center of table over prompt zone */
+.lt-played.big {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  width: min(100%, 320px);
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem 0.65rem;
+  justify-items: center;
+  align-items: start;
+  padding: 0.5rem;
+  margin: 0;
+  pointer-events: auto;
+  background: rgba(9, 9, 11, 0.45);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* 3 cards → still 2-column (2 on first row, 1 centered feels odd; keep 2-col) */
+.lt-played.big[style*="--n: 3"],
+.lt-played.big {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 5–6 players: 3 columns if space */
+@media (min-width: 400px) {
+  .lt-played.big {
+    width: min(100%, 380px);
+  }
+}
+
+/* Dim prompts under the overlay so vote cards read as the focus */
+.lt-center:has(.lt-played.big) .lt-prompts,
+.lt-center:has(.lt-played.big) .lt-supply,
+.lt-center:has(.lt-played.big) .lt-prompt-banner {
+  opacity: 0.28;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+/* Card size — full card visible, not clipped */
+.lt-played.big .lt-played-item {
+  width: 100%;
+  max-width: 132px;
+}
+.lt-played.big .card-scene {
+  overflow: visible;
+}
+.lt-played.big .card-rotator.reveal-size {
+  width: 112px !important;
+  min-width: 112px !important;
+  max-width: 112px !important;
+  height: 158px !important;
+}
+.lt-played.big .card-rotator.reveal-size .card,
+.lt-played.big .card-rotator.reveal-size .card-face {
+  overflow: hidden; /* text inside card only */
+}
+
+/* Gather/shuffle stay compact in flow (not overlay) until spread */
+.lt-played:not(.big) {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+@media (max-width: 430px) {
+  .lt-played.big {
+    top: 48%;
+    width: min(100%, 300px);
+    gap: 0.4rem 0.45rem;
+    padding: 0.4rem;
+  }
+  .lt-played.big .card-rotator.reveal-size {
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+    height: 140px !important;
+  }
+  .live-table {
+    max-height: none;
+    min-height: 420px;
+  }
+}
+
+@media (min-width: 768px) {
+  .lt-played.big {
+    width: min(100%, 400px);
+    top: 45%;
+  }
+  .lt-played.big .card-rotator.reveal-size {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+    height: 168px !important;
+  }
+}
+.lt-played.big.n-5,
+.lt-played.big.n-6,
+.lt-played.big.n-7,
+.lt-played.big.n-8 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 420px);
+}
+.lt-played.big.n-5 .card-rotator.reveal-size,
+.lt-played.big.n-6 .card-rotator.reveal-size,
+.lt-played.big.n-7 .card-rotator.reveal-size,
+.lt-played.big.n-8 .card-rotator.reveal-size {
+  width: 96px !important;
+  min-width: 96px !important;
+  max-width: 96px !important;
+  height: 134px !important;
+}
+
+
+/* ==========================================================================
+   Responsive vote grid + polished card flip
+   ========================================================================== */
+
+/* Flip timing — smoother for reveal sequence */
+.lt-played.big .card-rotator {
+  transition: transform 0.75s cubic-bezier(0.4, 0.15, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.lt-played.big .card-scene {
+  perspective: 900px;
+}
+.lt-played-item.just-flipped .card-rotator {
+  animation: none;
+}
+.lt-played-item.just-flipped {
+  animation: flipLift 0.75s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+}
+@keyframes flipLift {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-12px) scale(1.04); }
+  100% { transform: translateY(0) scale(1); }
+}
+.card.flip-pop {
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(250, 204, 21, 0.25);
+}
+
+/* Responsive columns */
+.lt-played.big {
+  display: grid !important;
+  justify-items: center;
+  align-items: start;
+  gap: 0.55rem 0.65rem;
+}
+.lt-played.big.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 300px);
+}
+.lt-played.big.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 400px);
+}
+.lt-played.big.n-1 {
+  grid-template-columns: 1fr;
+  width: auto;
+}
+.lt-played.big.n-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 280px);
+}
+
+/* Phone */
+@media (max-width: 430px) {
+  .lt-played.big.cols-2 {
+    width: min(100%, 280px);
+    gap: 0.4rem 0.45rem;
+  }
+  .lt-played.big.cols-3 {
+    width: min(100%, 320px);
+    gap: 0.35rem 0.35rem;
+  }
+  .lt-played.big.cols-3 .card-rotator.reveal-size {
+    width: 88px !important;
+    min-width: 88px !important;
+    max-width: 88px !important;
+    height: 124px !important;
+  }
+  .lt-played.big.cols-2 .card-rotator.reveal-size {
+    width: 108px !important;
+    min-width: 108px !important;
+    max-width: 108px !important;
+    height: 152px !important;
+  }
+}
+
+/* Tablet / desktop */
+@media (min-width: 640px) {
+  .lt-played.big.cols-2 {
+    width: min(100%, 360px);
+    gap: 0.7rem 0.85rem;
+  }
+  .lt-played.big.cols-3 {
+    width: min(100%, 460px);
+  }
+  .lt-played.big.cols-2 .card-rotator.reveal-size {
+    width: 124px !important;
+    min-width: 124px !important;
+    max-width: 124px !important;
+    height: 174px !important;
+  }
+  .lt-played.big.cols-3 .card-rotator.reveal-size {
+    width: 108px !important;
+    min-width: 108px !important;
+    max-width: 108px !important;
+    height: 152px !important;
+  }
+}
+
+/* Ensure back face hidden correctly during 3D flip */
+.lt-played.big .card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+
+/* ==========================================================================
+   FIX: vote cards fully visible + truly centered on the table
+   ========================================================================== */
+
+.live-table {
+  position: relative !important;
+  overflow: visible !important;
+  max-height: none !important;
+  /* keep a solid felt footprint without clipping overlays */
+  min-height: min(70vh, 560px);
+  aspect-ratio: auto !important;
+}
+
+.live-table-scroll {
+  overflow: visible !important;
+}
+
+.lt-mid,
+.lt-center,
+.lt-top,
+.lt-bottom {
+  overflow: visible !important;
+}
+
+/* Table-level overlay — centers on entire felt */
+.live-table > .lt-played.big {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 40 !important;
+  width: min(92%, 340px) !important;
+  max-width: 92% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0.65rem !important;
+  display: grid !important;
+  gap: 0.6rem 0.7rem !important;
+  justify-items: center !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  background: rgba(6, 10, 8, 0.82) !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(250, 204, 21, 0.22) !important;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  pointer-events: auto !important;
+}
+
+.live-table > .lt-played.big.cols-2,
+.live-table > .lt-played.big.n-2,
+.live-table > .lt-played.big.n-3,
+.live-table > .lt-played.big.n-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.live-table > .lt-played.big.cols-3,
+.live-table > .lt-played.big.n-5,
+.live-table > .lt-played.big.n-6,
+.live-table > .lt-played.big.n-7,
+.live-table > .lt-played.big.n-8 {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  width: min(96%, 420px) !important;
+}
+
+/* Full card — no bottom crop */
+.live-table > .lt-played.big .lt-played-item {
+  width: auto !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+.live-table > .lt-played.big .card-scene {
+  overflow: visible !important;
+}
+.live-table > .lt-played.big .card-rotator.reveal-size {
+  width: 118px !important;
+  min-width: 118px !important;
+  max-width: 118px !important;
+  height: 166px !important;
+}
+
+/* Dim everything under the overlay */
+.live-table:has(> .lt-played.big) .lt-top,
+.live-table:has(> .lt-played.big) .lt-mid,
+.live-table:has(> .lt-played.big) .lt-bottom {
+  opacity: 0.22;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+@media (max-width: 430px) {
+  .live-table {
+    min-height: 480px;
+  }
+  .live-table > .lt-played.big {
+    width: min(94%, 300px) !important;
+    padding: 0.5rem !important;
+    gap: 0.45rem 0.5rem !important;
+  }
+  .live-table > .lt-played.big .card-rotator.reveal-size {
+    width: 108px !important;
+    min-width: 108px !important;
+    max-width: 108px !important;
+    height: 152px !important;
+  }
+  .live-table > .lt-played.big.cols-3 .card-rotator.reveal-size {
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
+    height: 126px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .live-table > .lt-played.big {
+    width: min(90%, 400px) !important;
+  }
+  .live-table > .lt-played.big .card-rotator.reveal-size {
+    width: 128px !important;
+    min-width: 128px !important;
+    max-width: 128px !important;
+    height: 180px !important;
+  }
+}
