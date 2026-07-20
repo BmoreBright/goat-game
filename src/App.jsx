@@ -925,13 +925,26 @@ function App() {
     setCurrentCoach(0);
     setCurrentPlayer(0);
 
-    // Always enter table with cinematic intro + dialogue first
+    // Enter dealing (or free agency if enabled) — no tableIntro cutscene
     setFreeAgencyStep({ player: 0 });
-    setTempHands({ player: [], team: [], moment: [] });
-    setGamePhase('tableIntro');
-    setIsReady(true);
-    setIntroFlash(true);
-    setTimeout(() => setIntroFlash(false), 1100);
+    if (options.freeAgency) {
+      const h0 = newHands[0];
+      setTempHands({
+        player: (h0.player || []).map(c => ({ ...c, selected: false })),
+        team: (h0.team || []).map(c => ({ ...c, selected: false })),
+        moment: (h0.moment || []).map(c => ({ ...c, selected: false })),
+      });
+      setGamePhase('freeAgency');
+      setIsReady(true);
+      setTimeout(() => showRuleTip('freeAgency'), 400);
+    } else {
+      setTempHands({ player: [], team: [], moment: [] });
+      setGamePhase('dealing');
+      setIsReady(true);
+      setIsShuffling(true);
+      runDealAnimation();
+      setTimeout(() => setIsShuffling(false), 700);
+    }
   };
 
   const beginTempHandsForPlayer = (playerIdx, handsSnapshot) => {
@@ -1668,6 +1681,9 @@ function App() {
           <span className={`ms-name ${isCoachPick ? 'name-breathe' : ''}`}>
             {name}{interactiveDecks ? ' (you)' : ''}
           </span>
+          {gamePhase === 'playing' && played && (
+            <span className="ms-vote-in">Pick is in</span>
+          )}
           {gamePhase === 'voting' && votes[idx] !== undefined && (
             <span className="ms-vote-in">Vote is in</span>
           )}
@@ -1797,9 +1813,15 @@ function App() {
               </div>
 
               {showPromptText && currentPrompt && (
-                <div className={`lt-prompt-banner cat-${currentPrompt.category}`}>
-                  <span>{currentPrompt.category}</span>
-                  <p>{currentPrompt.text}</p>
+                <div className={`lt-active-prompt cat-${currentPrompt.category}`}>
+                  <div className="lt-active-prompt-card">
+                    <GameCard
+                      card={currentPrompt}
+                      flipped={false}
+                      size="reveal"
+                      disabled
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1876,3 +1898,349 @@ function App() {
       </div>
     );
   };
+  const PassScreen = ({ playerIdx, actionLabel }) => (
+    <div className="pass-screen">
+      <PassIcon className="w-14 h-14 text-yellow-500/80 mx-auto mb-3" />
+      <h2 className="text-2xl font-black text-yellow-400 mb-1">Pass to {getName(playerIdx)}</h2>
+      <p className="text-zinc-400 text-sm mb-6">{actionLabel}</p>
+      <button
+        type="button"
+        className="px-10 py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-2xl btn-press"
+        onClick={() => { sounds.click(); setIsReady(true); }}
+      >
+        I&apos;m {getName(playerIdx)} — continue
+      </button>
+    </div>
+  );
+
+  const selfIdx = isOnline && mySeat != null ? mySeat : 0;
+  const handCats = ['player', 'team', 'moment'];
+  const activeHand =
+    gamePhase === 'playing' && currentPrompt
+      ? (hands[selfIdx]?.[currentPrompt.category] || [])
+      : hoveredCategory
+        ? (hands[selfIdx]?.[hoveredCategory] || [])
+        : [];
+
+  const phaseDialogue = (() => {
+    if (gamePhase === 'category') {
+      return {
+        title: 'Pick a prompt card',
+        body: `${getName(currentCoach)} — select Player, Team, or Moment`,
+      };
+    }
+    if (gamePhase === 'playing') {
+      return {
+        title: `${getName(currentPlayer)}'s turn`,
+        body: currentPrompt
+          ? `Play a ${currentPrompt.category} card that best matches the prompt`
+          : 'Play a card',
+      };
+    }
+    if (gamePhase === 'reveal') {
+      if (revealAnim === 'ready') {
+        return { title: 'Cast your vote', body: 'Pick the card that best matches the prompt' };
+      }
+      return { title: 'Revealing answers', body: 'Cards gather over the prompt decks' };
+    }
+    if (gamePhase === 'voting') {
+      return {
+        title: 'Cast your vote',
+        body: `${getName(currentPlayer)} — choose the best answer (not your own)`,
+      };
+    }
+    if (gamePhase === 'results') {
+      const winP = winnerIndex != null && playedCards[winnerIndex]
+        ? getName(playedCards[winnerIndex].playerIndex)
+        : '—';
+      return { title: `${winP} wins the round`, body: 'Points awarded · cards discarded' };
+    }
+    if (gamePhase === 'dealing') {
+      return { title: `Begin Round ${roundNumber}`, body: 'Dealing new cards…' };
+    }
+    return null;
+  })();
+
+  // Open the matching hand category when play starts
+  useEffect(() => {
+    if (gamePhase === 'playing' && currentPrompt?.category) {
+      setHoveredCategory(currentPrompt.category);
+    }
+  }, [gamePhase, currentPrompt?.category]);
+
+  // Auto-advance results → nextRound (no click)
+  useEffect(() => {
+    if (gamePhase !== 'results') return undefined;
+    const t = setTimeout(() => nextRound(), reduceMotion ? 1200 : 3200);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gamePhase]);
+
+  return (
+    <div className={`app-shell theme-${visualTheme}`}>
+      {/* Header */}
+      <header className="app-header">
+        <div className="app-brand">
+          <span className="app-logo">🏆</span>
+          <span className="app-title">G.O.A.T. <em>DEBATE</em></span>
+        </div>
+        {gamePhase !== 'setup' && (
+          <div className="app-meta">
+            Round {roundNumber} · First to {targetScore}
+          </div>
+        )}
+      </header>
+
+      <main className="app-main">
+        {/* SETUP */}
+        {gamePhase === 'setup' && (
+          <div className="setup-panel scale-in">
+            <h1 className="text-3xl font-black text-yellow-400 mb-2">G.O.A.T. Debate</h1>
+            <p className="text-zinc-400 mb-6">Sports arguments. Settled at the table.</p>
+
+            <div className="setup-block">
+              <label className="setup-label">Players</label>
+              <div className="flex gap-2 flex-wrap justify-center">
+                {[3, 4, 5, 6].map(n => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`px-4 py-2 rounded-xl font-bold ${playerCount === n ? 'bg-yellow-500 text-black' : 'bg-zinc-800'}`}
+                    onClick={() => { sounds.click(); setPlayerCount(n); }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="setup-block">
+              <label className="setup-label">Names</label>
+              {Array.from({ length: playerCount }).map((_, i) => (
+                <input
+                  key={i}
+                  className="setup-input"
+                  placeholder={`Player ${i + 1}`}
+                  value={playerNames[i]}
+                  onChange={e => {
+                    const next = [...playerNames];
+                    next[i] = e.target.value;
+                    setPlayerNames(next);
+                  }}
+                />
+              ))}
+            </div>
+
+            <div className="setup-block">
+              <label className="setup-label">First to</label>
+              <div className="flex gap-2 justify-center">
+                {[3, 5, 7, 10].map(n => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`px-3 py-2 rounded-xl font-bold ${targetScore === n ? 'bg-yellow-500 text-black' : 'bg-zinc-800'}`}
+                    onClick={() => { sounds.click(); setTargetScore(n); }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="setup-block flex flex-wrap gap-3 justify-center text-sm">
+              {[
+                ['freeAgency', 'Free Agency'],
+                ['trades', 'Trades'],
+                ['shorthanded', 'Shorthanded'],
+                ['injured', 'Injured'],
+              ].map(([key, label]) => (
+                <label key={key} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={options[key]}
+                    onChange={() => setOptions(o => ({ ...o, [key]: !o[key] }))}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="mt-6 px-12 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-black rounded-2xl text-lg btn-press"
+              disabled={!cardsLoaded}
+              onClick={() => { sounds.click(); startGame(); }}
+            >
+              {cardsLoaded ? 'Start Game' : 'Loading cards…'}
+            </button>
+          </div>
+        )}
+
+        {/* In-game dialogue (sketches: text directs players) */}
+        {gamePhase !== 'setup' && gamePhase !== 'gameOver' && phaseDialogue && (
+          <div className="turn-dialog">
+            <h2 className="turn-dialog-title">{phaseDialogue.title}</h2>
+            <p className="turn-dialog-body">{phaseDialogue.body}</p>
+          </div>
+        )}
+
+        {/* TABLE — always visible after setup */}
+        {gamePhase !== 'setup' && gamePhase !== 'gameOver' && (
+          <TableBoard
+            decksClickable={gamePhase === 'category' && (!isOnline || isHost || mySeat === currentCoach)}
+            showPromptText={!!currentPrompt && gamePhase !== 'category'}
+            showCenterPlayed={['reveal', 'voting', 'results'].includes(gamePhase)}
+            centerFaceDown={gamePhase === 'reveal' && !['ready', 'flipping'].includes(revealAnim)}
+            centerShowVote={gamePhase === 'voting'}
+            centerShowResults={gamePhase === 'results'}
+            showPromptArrow={gamePhase === 'category'}
+          />
+        )}
+
+        {/* HAND — only your decks expand below the table */}
+        {gamePhase === 'playing' && isReady && (
+          <div className="player-hand-dock">
+            <div className="hand-deck-tabs">
+              {handCats.map(cat => {
+                const n = hands[selfIdx]?.[cat]?.length || 0;
+                const isPromptCat = currentPrompt?.category === cat;
+                const active = hoveredCategory === cat || (!hoveredCategory && isPromptCat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={`hand-tab ${cat} ${active ? 'on' : ''} ${isPromptCat ? 'is-prompt-cat' : ''}`}
+                    onClick={() => { sounds.select(); setHoveredCategory(cat); }}
+                  >
+                    <span className={`tab-deck-art ${cat}`} />
+                    <span>{cat} · {n}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {(hoveredCategory || currentPrompt) && (
+              <div className="hand-fan">
+                {(hoveredCategory
+                  ? hands[selfIdx]?.[hoveredCategory] || []
+                  : hands[selfIdx]?.[currentPrompt.category] || []
+                ).map(card => {
+                  const cat = card.category;
+                  const legal =
+                    currentPrompt &&
+                    cat === currentPrompt.category &&
+                    !(card.injury > 0) &&
+                    currentPlayer === selfIdx;
+                  return (
+                    <div
+                      key={card.uid}
+                      className={`hand-card-wrap ${hoveredCardUid === card.uid ? 'lifted' : ''} ${!legal ? 'dim' : ''}`}
+                      onMouseEnter={() => setHoveredCardUid(card.uid)}
+                      onMouseLeave={() => setHoveredCardUid(null)}
+                    >
+                      <GameCard
+                        card={card}
+                        size="hand"
+                        disabled={!legal}
+                        onClick={() => {
+                          if (!legal) return;
+                          if (isOnline && !isHost && mySeat !== currentPlayer) return;
+                          playCard(card);
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {currentPlayer !== selfIdx && !isOnline && (
+              <div className="text-center mt-3">
+                <button
+                  type="button"
+                  className="px-6 py-2 bg-zinc-800 rounded-xl text-sm"
+                  onClick={() => { sounds.click(); setIsReady(false); }}
+                >
+                  Pass device to {getName(currentPlayer)}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Local pass-the-device for voting */}
+        {gamePhase === 'voting' && !isOnline && !isReady && (
+          <PassScreen playerIdx={currentPlayer} actionLabel="Vote for the best card (not your own)" />
+        )}
+        {gamePhase === 'playing' && !isOnline && !isReady && (
+          <PassScreen playerIdx={currentPlayer} actionLabel="Play a card that matches the prompt" />
+        )}
+
+        {/* FREE AGENCY — keep 7 per category */}
+        {gamePhase === 'freeAgency' && isReady && (
+          <div className="setup-panel scale-in">
+            <h2 className="text-xl font-black text-yellow-400 mb-1">Free Agency</h2>
+            <p className="text-zinc-400 text-sm mb-4">{getName(freeAgencyStep.player)} — keep exactly 7 per category</p>
+            {['player', 'team', 'moment'].map(cat => (
+              <div key={cat} className="mb-4 text-left">
+                <div className="text-xs font-bold uppercase tracking-wide text-zinc-500 mb-2">
+                  {cat} · {(tempHands[cat] || []).filter(c => c.selected).length}/7 kept
+                </div>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {(tempHands[cat] || []).map((card, i) => (
+                    <button
+                      key={card.uid || i}
+                      type="button"
+                      className={`px-2 py-1 rounded-lg text-xs border ${card.selected ? 'border-yellow-500 bg-yellow-500/15' : 'border-zinc-700 bg-zinc-900'}`}
+                      onClick={() => {
+                        sounds.select();
+                        setTempHands(th => ({
+                          ...th,
+                          [cat]: th[cat].map((c, j) => j === i ? { ...c, selected: !c.selected } : c),
+                        }));
+                      }}
+                    >
+                      {card.text.slice(0, 28)}{card.text.length > 28 ? '…' : ''}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-2xl btn-press"
+              onClick={confirmFreeAgency}
+            >
+              Confirm keep 7
+            </button>
+          </div>
+        )}
+        {gamePhase === 'freeAgency' && !isReady && !isOnline && (
+          <PassScreen playerIdx={freeAgencyStep.player} actionLabel="Free Agency — keep 7 cards per category" />
+        )}
+
+        {/* GAME OVER */}
+        {gamePhase === 'gameOver' && (
+          <div className="setup-panel text-center scale-in">
+            <h2 className="text-4xl font-black text-yellow-400 mb-2">Game Over</h2>
+            <p className="text-xl text-zinc-300 mb-6">
+              {getName(scores.indexOf(Math.max(...scores)))} is the G.O.A.T.
+            </p>
+            <ul className="mb-8 space-y-1">
+              {scores.map((s, i) => (
+                <li key={i} className="text-zinc-400">{getName(i)} — {s} pts</li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              className="px-10 py-3 bg-yellow-500 text-black font-bold rounded-2xl"
+              onClick={() => { sounds.click(); setGamePhase('setup'); }}
+            >
+              Back to setup
+            </button>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default App;
