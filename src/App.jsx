@@ -1986,7 +1986,12 @@ function App() {
         </div>
         {gamePhase !== 'setup' && (
           <div className="app-meta">
-            Round {roundNumber} · First to {targetScore}
+            {isOnline && netStatus.roomCode && (
+              <span className="online-pill" title="Online room">
+                Online · {netStatus.roomCode}
+              </span>
+            )}
+            <span>Round {roundNumber} · First to {targetScore}</span>
           </div>
         )}
       </header>
@@ -1996,83 +2001,245 @@ function App() {
         {gamePhase === 'setup' && (
           <div className="setup-panel scale-in">
             <h1 className="text-3xl font-black text-yellow-400 mb-2">G.O.A.T. Debate</h1>
-            <p className="text-zinc-400 mb-6">Sports arguments. Settled at the table.</p>
+            <p className="text-zinc-400 mb-5">Sports arguments. Settled at the table.</p>
 
+            {/* Mode: Local vs Online */}
             <div className="setup-block">
-              <label className="setup-label">Players</label>
-              <div className="flex gap-2 flex-wrap justify-center">
-                {[3, 4, 5, 6].map(n => (
-                  <button
-                    key={n}
-                    type="button"
-                    className={`px-4 py-2 rounded-xl font-bold ${playerCount === n ? 'bg-yellow-500 text-black' : 'bg-zinc-800'}`}
-                    onClick={() => { sounds.click(); setPlayerCount(n); }}
-                  >
-                    {n}
-                  </button>
-                ))}
+              <label className="setup-label">How are you playing?</label>
+              <div className="mode-toggle">
+                <button
+                  type="button"
+                  className={`mode-btn ${playMode === 'local' ? 'on' : ''}`}
+                  onClick={() => { sounds.click(); setPlayMode('local'); }}
+                >
+                  <span className="mode-btn-title">Pass &amp; Play</span>
+                  <span className="mode-btn-sub">One device · local</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mode-btn ${playMode === 'online' ? 'on' : ''}`}
+                  onClick={() => { sounds.click(); setPlayMode('online'); }}
+                >
+                  <span className="mode-btn-title">Online</span>
+                  <span className="mode-btn-sub">Friends · any device</span>
+                </button>
               </div>
             </div>
 
-            <div className="setup-block">
-              <label className="setup-label">Names</label>
-              {Array.from({ length: playerCount }).map((_, i) => (
-                <input
-                  key={i}
-                  className="setup-input"
-                  placeholder={`Player ${i + 1}`}
-                  value={playerNames[i]}
-                  onChange={e => {
-                    const next = [...playerNames];
-                    next[i] = e.target.value;
-                    setPlayerNames(next);
-                  }}
-                />
-              ))}
-            </div>
+            {/* —— ONLINE LOBBY —— */}
+            {playMode === 'online' && (
+              <div className="online-lobby">
+                <div className={`net-status ${netStatus.connected ? 'live' : 'down'}`}>
+                  <span className="net-dot" />
+                  {netStatus.connected ? 'Connected to server' : (netStatus.error || 'Connecting…')}
+                </div>
 
-            <div className="setup-block">
-              <label className="setup-label">First to</label>
-              <div className="flex gap-2 justify-center">
-                {[3, 5, 7, 10].map(n => (
-                  <button
-                    key={n}
-                    type="button"
-                    className={`px-3 py-2 rounded-xl font-bold ${targetScore === n ? 'bg-yellow-500 text-black' : 'bg-zinc-800'}`}
-                    onClick={() => { sounds.click(); setTargetScore(n); }}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="setup-block flex flex-wrap gap-3 justify-center text-sm">
-              {[
-                ['freeAgency', 'Free Agency'],
-                ['trades', 'Trades'],
-                ['shorthanded', 'Shorthanded'],
-                ['injured', 'Injured'],
-              ].map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2 cursor-pointer">
+                <div className="setup-block">
+                  <label className="setup-label">Your name</label>
                   <input
-                    type="checkbox"
-                    checked={options[key]}
-                    onChange={() => setOptions(o => ({ ...o, [key]: !o[key] }))}
+                    className="setup-input"
+                    placeholder="Enter your name"
+                    value={lobbyName}
+                    maxLength={18}
+                    onChange={e => setLobbyName(e.target.value)}
                   />
-                  {label}
-                </label>
-              ))}
-            </div>
+                </div>
 
-            <button
-              type="button"
-              className="mt-6 px-12 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-black rounded-2xl text-lg btn-press"
-              disabled={!cardsLoaded}
-              onClick={() => { sounds.click(); startGame(); }}
-            >
-              {cardsLoaded ? 'Start Game' : 'Loading cards…'}
-            </button>
+                {!netStatus.roomCode ? (
+                  <div className="online-actions">
+                    <button
+                      type="button"
+                      className="px-6 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl btn-press"
+                      disabled={!netStatus.connected || !lobbyName.trim()}
+                      onClick={() => {
+                        sounds.click();
+                        const name = lobbyName.trim() || 'Host';
+                        netRef.current?.createRoom(name);
+                      }}
+                    >
+                      Create room
+                    </button>
+                    <div className="online-join-row">
+                      <input
+                        className="setup-input join-code-input"
+                        placeholder="Room code"
+                        value={joinCode}
+                        maxLength={6}
+                        onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                      />
+                      <button
+                        type="button"
+                        className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl btn-press"
+                        disabled={!netStatus.connected || !joinCode.trim() || joinCode.trim().length < 4}
+                        onClick={() => {
+                          sounds.click();
+                          const name = lobbyName.trim() || 'Player';
+                          netRef.current?.joinRoom(joinCode.trim(), name);
+                        }}
+                      >
+                        Join
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="room-panel">
+                    <div className="room-code-row">
+                      <span className="setup-label" style={{ margin: 0 }}>Room code</span>
+                      <button
+                        type="button"
+                        className="room-code-pill"
+                        title="Copy code"
+                        onClick={() => {
+                          sounds.click();
+                          try {
+                            navigator.clipboard?.writeText(netStatus.roomCode);
+                          } catch { /* */ }
+                        }}
+                      >
+                        {netStatus.roomCode}
+                        <span className="room-code-hint">tap to copy</span>
+                      </button>
+                    </div>
+                    <p className="text-zinc-500 text-xs mb-3">
+                      Share this code with friends. {isHost ? 'You are the host.' : 'Waiting for host to start…'}
+                    </p>
+                    <ul className="lobby-players">
+                      {(netStatus.players || []).map((p, i) => (
+                        <li key={p.id || i} className={`lobby-player ${p.connected ? '' : 'off'} ${p.isHost ? 'host' : ''}`}>
+                          <span className="lobby-seat">P{(p.seat ?? i) + 1}</span>
+                          <span className="lobby-name">{p.name || `Player ${(p.seat ?? i) + 1}`}</span>
+                          {p.isHost && <span className="lobby-badge">Host</span>}
+                          {!p.connected && <span className="lobby-badge dim">Away</span>}
+                          {netStatus.seat === p.seat && <span className="lobby-badge you">You</span>}
+                        </li>
+                      ))}
+                    </ul>
+                    {isHost ? (
+                      <button
+                        type="button"
+                        className="mt-4 px-10 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black rounded-2xl btn-press"
+                        disabled={!cardsLoaded || (netStatus.players || []).filter(p => p.connected).length < 2}
+                        onClick={() => { sounds.click(); startGame(); }}
+                      >
+                        {!cardsLoaded
+                          ? 'Loading cards…'
+                          : (netStatus.players || []).filter(p => p.connected).length < 2
+                            ? 'Need at least 2 players'
+                            : `Start game · ${(netStatus.players || []).filter(p => p.connected).length} players`}
+                      </button>
+                    ) : (
+                      <p className="mt-4 text-sm text-zinc-400 font-medium">Waiting for host to start the game…</p>
+                    )}
+                    <button
+                      type="button"
+                      className="mt-3 text-xs text-zinc-500 underline"
+                      onClick={() => {
+                        sounds.click();
+                        netRef.current?.disconnect();
+                        setNetStatus(s => ({ ...s, roomCode: null, isHost: false, seat: null, players: [], error: null }));
+                        // reconnect socket for a new room
+                        setTimeout(() => {
+                          if (playMode === 'online') {
+                            setPlayMode('local');
+                            setTimeout(() => setPlayMode('online'), 50);
+                          }
+                        }, 100);
+                      }}
+                    >
+                      Leave room
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* —— LOCAL SETUP —— */}
+            {playMode === 'local' && (
+              <>
+                <div className="setup-block">
+                  <label className="setup-label">Players</label>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    {[3, 4, 5, 6].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`px-4 py-2 rounded-xl font-bold ${playerCount === n ? 'bg-yellow-500 text-black' : 'bg-zinc-800'}`}
+                        onClick={() => { sounds.click(); setPlayerCount(n); }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="setup-block">
+                  <label className="setup-label">Names</label>
+                  {Array.from({ length: playerCount }).map((_, i) => (
+                    <input
+                      key={i}
+                      className="setup-input"
+                      placeholder={`Player ${i + 1}`}
+                      value={playerNames[i]}
+                      onChange={e => {
+                        const next = [...playerNames];
+                        next[i] = e.target.value;
+                        setPlayerNames(next);
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Shared options */}
+            {(playMode === 'local' || (playMode === 'online' && isHost && netStatus.roomCode)) && (
+              <>
+                <div className="setup-block">
+                  <label className="setup-label">First to</label>
+                  <div className="flex gap-2 justify-center">
+                    {[3, 5, 7, 10].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`px-3 py-2 rounded-xl font-bold ${targetScore === n ? 'bg-yellow-500 text-black' : 'bg-zinc-800'}`}
+                        onClick={() => { sounds.click(); setTargetScore(n); }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="setup-block flex flex-wrap gap-3 justify-center text-sm">
+                  {[
+                    ['freeAgency', 'Free Agency'],
+                    ['trades', 'Trades'],
+                    ['shorthanded', 'Shorthanded'],
+                    ['injured', 'Injured'],
+                  ].map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={options[key]}
+                        onChange={() => setOptions(o => ({ ...o, [key]: !o[key] }))}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {playMode === 'local' && (
+              <button
+                type="button"
+                className="mt-6 px-12 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-black rounded-2xl text-lg btn-press"
+                disabled={!cardsLoaded}
+                onClick={() => { sounds.click(); startGame(); }}
+              >
+                {cardsLoaded ? 'Start Game' : 'Loading cards…'}
+              </button>
+            )}
           </div>
         )}
 
