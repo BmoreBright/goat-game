@@ -1277,7 +1277,8 @@ function App() {
       setIsReady(true);
     } else {
       setCurrentPlayer(currentPlayer + 1);
-      setIsReady(false);
+      // Local pass-the-device needs a Pass screen; online each device stays ready
+      setIsReady(!!isOnline);
     }
   };
 
@@ -1370,7 +1371,7 @@ function App() {
     setTempOTAnswer('');
     if (currentOTWriter + 1 < overtimePlayers.length) {
       setCurrentOTWriter(currentOTWriter + 1);
-      setIsReady(false);
+      setIsReady(!!isOnline);
     } else {
       setOvertimeAnswerOrder(shuffle([...overtimePlayers]));
       setOvertimeReveal(false);
@@ -1441,6 +1442,7 @@ function App() {
     const newScores = [...scores];
     newScores[playerIndex] += pts;
     setScores(newScores);
+    setLastWinner(playerIndex);
     triggerChipFly(playerIndex, pts);
 
     if (fromOvertime) {
@@ -1533,7 +1535,7 @@ function App() {
       }
     } else {
       setCurrentPlayer(currentPlayer + 1);
-      setIsReady(false);
+      setIsReady(!!isOnline); // online: next seat acts on their device; local: pass screen
     }
   };
 
@@ -1952,11 +1954,35 @@ function App() {
     if (gamePhase === 'results') {
       const winP = winnerIndex != null && playedCards[winnerIndex]
         ? getName(playedCards[winnerIndex].playerIndex)
-        : '—';
+        : (lastWinner != null ? getName(lastWinner) : '—');
       return { title: `${winP} wins the round`, body: 'Points awarded · cards discarded' };
     }
     if (gamePhase === 'dealing') {
       return { title: `Begin Round ${roundNumber}`, body: 'Dealing new cards…' };
+    }
+    if (gamePhase === 'tieNotice') {
+      return {
+        title: "It's a tie!",
+        body: playerCount === 2
+          ? 'Head-to-head — overtime question incoming'
+          : `${overtimePlayers.map(getName).join(' & ')} head to overtime`,
+      };
+    }
+    if (gamePhase === 'overtimeWriting') {
+      const w = overtimePlayers[currentOTWriter];
+      return {
+        title: 'Overtime',
+        body: `${getName(w)} — write your answer`,
+      };
+    }
+    if (gamePhase === 'overtimeReveal') {
+      return { title: 'Overtime answers', body: jumpBallAnim ? 'Jump ball!' : 'Revealing…' };
+    }
+    if (gamePhase === 'overtimeVoting') {
+      return {
+        title: 'Overtime vote',
+        body: `${getName(currentPlayer)} — pick the better answer`,
+      };
     }
     return null;
   })();
@@ -1975,6 +2001,49 @@ function App() {
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gamePhase]);
+
+  // Tie banner → overtime writing
+  useEffect(() => {
+    if (gamePhase !== 'tieNotice') return undefined;
+    const t = setTimeout(() => {
+      setGamePhase('overtimeWriting');
+      setCurrentOTWriter(0);
+      setTempOTAnswer('');
+      setIsReady(true);
+    }, reduceMotion ? 800 : 2400);
+    return () => clearTimeout(t);
+  }, [gamePhase, reduceMotion]);
+
+  // After OT answers revealed: if no neutral voters (e.g. 2-player), jump ball; else vote
+  useEffect(() => {
+    if (gamePhase !== 'overtimeReveal') return undefined;
+    const t = setTimeout(() => {
+      let voters;
+      if (overtimePlayers.length === 2) {
+        voters = Array.from({ length: playerCount }, (_, i) => i).filter(i => !overtimePlayers.includes(i));
+      } else {
+        voters = Array.from({ length: playerCount }, (_, i) => i);
+      }
+      if (voters.length === 0) {
+        // Head-to-head with no judges — jump ball
+        sounds.win();
+        setJumpBallAnim(true);
+        setTimeout(() => {
+          const winner = overtimePlayers[Math.floor(Math.random() * overtimePlayers.length)];
+          setJumpBallAnim(false);
+          awardPoint(winner, true);
+        }, reduceMotion ? 400 : 1000);
+      } else {
+        setCurrentPlayer(voters[0]);
+        setOvertimeVotes({});
+        setGamePhase('overtimeVoting');
+        setIsReady(true);
+      }
+    }, reduceMotion ? 900 : 2200);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gamePhase]);
+
 
   return (
     <div className={`app-shell theme-${visualTheme}`}>
@@ -2159,7 +2228,7 @@ function App() {
                 <div className="setup-block">
                   <label className="setup-label">Players</label>
                   <div className="flex gap-2 flex-wrap justify-center">
-                    {[3, 4, 5, 6].map(n => (
+                    {[2, 3, 4, 5, 6].map(n => (
                       <button
                         key={n}
                         type="button"
@@ -2339,6 +2408,111 @@ function App() {
         )}
         {gamePhase === 'playing' && !isOnline && !isReady && (
           <PassScreen playerIdx={currentPlayer} actionLabel="Play a card that matches the prompt" />
+        )}
+
+        {/* —— TIE / OVERTIME —— */}
+        {gamePhase === 'tieNotice' && (
+          <div className="ot-panel scale-in">
+            <div className="ot-badge">TIE</div>
+            <h2 className="text-3xl font-black text-yellow-400 mb-2">It&apos;s a Tie!</h2>
+            <p className="text-zinc-400 mb-4">
+              {overtimePlayers.map(getName).join(' vs ')}
+            </p>
+            <p className="text-sm text-zinc-500">Overtime starts automatically…</p>
+          </div>
+        )}
+
+        {gamePhase === 'overtimeWriting' && isReady && (
+          <div className="ot-panel scale-in">
+            <h2 className="text-xl font-black text-yellow-400 mb-1">Overtime</h2>
+            <p className="text-zinc-300 font-semibold mb-1">{getName(overtimePlayers[currentOTWriter])}</p>
+            {overtimePrompt && (
+              <p className="ot-prompt-text">{overtimePrompt.text}</p>
+            )}
+            <textarea
+              className="ot-textarea"
+              rows={3}
+              placeholder="Type your answer…"
+              value={tempOTAnswer}
+              onChange={e => setTempOTAnswer(e.target.value)}
+            />
+            <button
+              type="button"
+              className="mt-3 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-2xl btn-press"
+              onClick={() => {
+                if (isOnline && !isHost) {
+                  netSend('ot_answer', { text: tempOTAnswer });
+                  return;
+                }
+                submitOTAnswer();
+              }}
+            >
+              Submit answer
+            </button>
+          </div>
+        )}
+        {gamePhase === 'overtimeWriting' && !isOnline && !isReady && (
+          <PassScreen
+            playerIdx={overtimePlayers[currentOTWriter]}
+            actionLabel="Overtime — write your answer"
+          />
+        )}
+
+        {gamePhase === 'overtimeReveal' && (
+          <div className="ot-panel scale-in">
+            <h2 className="text-xl font-black text-yellow-400 mb-3">
+              {jumpBallAnim ? 'Jump Ball!' : 'Overtime answers'}
+            </h2>
+            {overtimePrompt && <p className="ot-prompt-text mb-4">{overtimePrompt.text}</p>}
+            <div className="ot-answers">
+              {(overtimeAnswerOrder.length ? overtimeAnswerOrder : overtimePlayers).map((pIdx) => (
+                <div key={pIdx} className="ot-answer-card">
+                  <div className="ot-answer-name">{getName(pIdx)}</div>
+                  <p>{overtimeAnswers[pIdx] || '—'}</p>
+                </div>
+              ))}
+            </div>
+            {jumpBallAnim && (
+              <p className="mt-4 text-yellow-400 font-bold animate-pulse">Randomizing winner…</p>
+            )}
+          </div>
+        )}
+
+        {gamePhase === 'overtimeVoting' && isReady && (
+          <div className="ot-panel scale-in">
+            <h2 className="text-xl font-black text-yellow-400 mb-1">Overtime vote</h2>
+            <p className="text-zinc-400 text-sm mb-3">{getName(currentPlayer)} — pick the better answer</p>
+            {overtimePrompt && <p className="ot-prompt-text mb-4">{overtimePrompt.text}</p>}
+            <div className="ot-answers">
+              {(overtimeAnswerOrder.length ? overtimeAnswerOrder : overtimePlayers).map((pIdx) => {
+                const blocked =
+                  pIdx === currentPlayer ||
+                  (overtimePlayers.length === 2 && overtimePlayers.includes(currentPlayer));
+                return (
+                  <button
+                    key={pIdx}
+                    type="button"
+                    disabled={blocked || overtimeVotes[currentPlayer] !== undefined}
+                    className={`ot-answer-card voteable ${blocked ? 'blocked' : ''}`}
+                    onClick={() => {
+                      if (blocked) return;
+                      if (isOnline && !isHost) {
+                        netSend('ot_vote', { answerPlayerIndex: pIdx });
+                        return;
+                      }
+                      castOTVote(pIdx);
+                    }}
+                  >
+                    <div className="ot-answer-name">{getName(pIdx)}</div>
+                    <p>{overtimeAnswers[pIdx] || '—'}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {gamePhase === 'overtimeVoting' && !isOnline && !isReady && (
+          <PassScreen playerIdx={currentPlayer} actionLabel="Overtime — vote for the best answer" />
         )}
 
         {/* FREE AGENCY — keep 7 per category */}

@@ -5335,3 +5335,93 @@ html, body {
   font-weight: 800;
   letter-spacing: 0.04em;
 }
+
+
+/* Overtime / tie panels */
+.ot-panel {
+  max-width: 28rem;
+  margin: 0.75rem auto 1.25rem;
+  padding: 1.1rem 1.15rem 1.25rem;
+  text-align: center;
+  border-radius: 16px;
+  background: rgba(9, 9, 11, 0.92);
+  border: 1px solid rgba(234, 179, 8, 0.28);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+}
+.ot-badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.18);
+  color: #fb923c;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.65rem;
+}
+.ot-prompt-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fafafa;
+  line-height: 1.35;
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(39, 39, 42, 0.8);
+  border-left: 3px solid #eab308;
+  text-align: left;
+}
+.ot-textarea {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid #3f3f46;
+  background: #18181b;
+  color: white;
+  font-size: 0.95rem;
+  resize: vertical;
+  min-height: 5rem;
+}
+.ot-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.ot-answer-card {
+  text-align: left;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: #18181b;
+  border: 1px solid #3f3f46;
+  color: inherit;
+  width: 100%;
+}
+.ot-answer-card.voteable {
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.ot-answer-card.voteable:hover:not(.blocked):not(:disabled) {
+  border-color: #eab308;
+  transform: translateY(-2px);
+}
+.ot-answer-card.blocked,
+.ot-answer-card:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ot-answer-name {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  margin-bottom: 0.25rem;
+}
+.ot-answer-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f4f4f5;
+  line-height: 1.35;
+}
